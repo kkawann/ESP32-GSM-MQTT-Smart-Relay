@@ -1,0 +1,55 @@
+/* ── Sensor Status Bar ── */
+.sensor-status-bar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.sensor-stat-pill{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700}
+.sensor-stat-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.sensor-stat-dot.ok{background:var(--success);box-shadow:0 0 8px var(--success)}
+.sensor-stat-dot.warn{background:var(--warning);box-shadow:0 0 8px var(--warning)}
+.sensor-stat-dot.err{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+
+/* ── Sensor Cards (Simple) ── */
+.sensor-card{
+  background:var(--card2);border-radius:14px;padding:16px;
+  border:1px solid var(--border);margin-bottom:10px;
+  display:flex;align-items:center;gap:14px;
+  position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+  animation:sensorFadeIn .4s ease-out;
+}
+.sensor-card:active{transform:scale(.98)}
+.sensor-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--success)}
+.sensor-card.warn::before{background:var(--warning)}
+.sensor-card.err::before{background:var(--danger)}
+.sensor-icon-wrap{
+  width:48px;height:48px;border-radius:14px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+  background:linear-gradient(135deg,var(--primary),#a855f7);
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.sensor-icon-wrap.online{background:linear-gradient(135deg,var(--success),#00ff88);box-shadow:0 2px 12px rgba(0,200,81,.3)}
+.sensor-icon-wrap.offline{background:linear-gradient(135deg,var(--danger),#ff6b6b);box-shadow:0 2px 12px rgba(255,68,68,.3)}
+.sensor-icon-wrap.warn{background:linear-gradient(135deg,var(--warning),#ffcc00);box-shadow:0 2px 12px rgba(255,187,51,.3)}
+.sensor-val-big{font-size:24px;font-weight:800;color:var(--text);line-height:1.2}
+.sensor-unit-sm{font-size:11px;color:var(--text2);font-weight:600}
+.sensor-name-lbl{font-size:13px;font-weight:700}
+.sensor-age{font-size:10px;color:var(--text2);margin-top:3px;display:flex;align-items:center;gap:4px}
+.sensor-age-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.sensor-age-dot.ok{background:var(--success)}
+.sensor-age-dot.warn{background:var(--warning)}
+.sensor-age-dot.err{background:var(--danger)}
+@keyframes sensorFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Sensor Cards (Advanced) ── */
+.sensor-card-adv{
+  background:var(--card2);border-radius:12px;padding:14px;
+  border:1px solid var(--border);margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;
+  transition:transform .2s;animation:sensorFadeIn .4s ease-out;
+}
+.sensor-card-adv:active{transform:scale(.98)}
+.sensor-adv-status{width:6px;height:40px;border-radius:3px;flex-shrink:0;background:var(--success)}
+.sensor-adv-status.warn{background:var(--warning)}
+.sensor-adv-status.err{background:var(--danger)}
+.sensor-adv-name{font-size:12px;font-weight:700;margin-bottom:2px}
+.sensor-adv-info{font-size:10px;color:var(--text2);line-height:1.5;margin-top:3px;font-family:monospace;direction:ltr;text-align:right}
+.sensor-adv-val{font-size:16px;font-weight:700;color:var(--text)}
+.sensor-adv-actions{display:flex;gap:6px;flex-shrink:0}

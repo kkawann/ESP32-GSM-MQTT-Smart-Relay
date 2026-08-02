@@ -1,0 +1,87 @@
+// ── لیست سنسورها ─────────────────────────────────────────────────
+async function loadSensorsPage(){
+  const sensors=await api('/api/sensors');
+  document.getElementById('sensorCounter').textContent=sensors.length+' سنسور';
+
+  const typeLabels=['درصد','دما','رطوبت','فاصله','ولتاژ','خام'];
+  const icons={0:'💧',1:'🌡️',2:'💦',3:'🪣',4:'⚡',5:'📡'};
+  const units={0:'%',1:'°C',2:'%RH',3:'cm',4:'V',5:''};
+
+  if(!sensors.length){
+    const emptyHtml='<div class="empty"><span class="empty-icon">🌡️</span><p>هنوز سنسوری ثبت نشده</p></div>';
+    document.getElementById('sensorList').innerHTML=emptyHtml;
+    document.getElementById('sensorListAdv').innerHTML=emptyHtml;
+    return;
+  }
+
+  // ├── Status Bar ──
+  let ok=0,warn=0,err=0;
+  for(const s of sensors){
+    if(!s.hasValue){err++;continue;}
+    if(s.ageS<300)ok++;
+    else if(s.ageS<900)warn++;
+    else err++;
+  }
+  let barHtml='<div class="sensor-status-bar">'+
+    '<div class="sensor-stat-pill"><span class="sensor-stat-dot ok"></span> '+ok+' فعال</div>'+
+    '<div class="sensor-stat-pill"><span class="sensor-stat-dot warn"></span> '+warn+' هشدار</div>'+
+    '<div class="sensor-stat-pill"><span class="sensor-stat-dot err"></span> '+err+' قطع</div>'+
+    '</div>';
+
+  // ├── Simple Mode ──
+  let hSimple=barHtml;
+  for(const s of sensors){
+    const ageOk=s.hasValue&&s.ageS<300;
+    const ageWarn=s.hasValue&&s.ageS>=300&&s.ageS<900;
+    const ageErr=!s.hasValue||s.ageS>=900;
+    const cardClass=ageErr?'err':(ageWarn?'warn':'');
+    const iconClass=ageErr?'offline':(ageWarn?'warn':'online');
+    const dotClass=ageErr?'err':(ageWarn?'warn':'ok');
+    const isDoor=s.valueType===5;
+    const valStr=isDoor?(s.lastValue>0.5?'🔓 باز':'🔒 بسته')
+      :(s.hasValue?(s.lastValue.toFixed(1)+' '+(units[s.valueType]||'')):'—');
+    const ageStr=s.hasValue?(s.ageS<60?s.ageS+' ثانیه':Math.floor(s.ageS/60)+' دقیقه پیش'):'هرگز';
+    const ageLabel=ageErr?'🔴 قطع':(ageWarn?'⚠️ قدیمی':'آخرین: '+ageStr);
+    hSimple+=`<div class="sensor-card ${cardClass}">
+      <div class="sensor-icon-wrap ${iconClass}">${icons[s.valueType]||'📡'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="sensor-name-lbl">${s.name}</div>
+        <div class="sensor-age"><span class="sensor-age-dot ${dotClass}"></span>${ageLabel}</div>
+      </div>
+      <div style="text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="sensor-val-big">${valStr}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="sOpenEdit(${s.id})">⚙️</button>
+          <button class="btn btn-danger btn-sm" onclick="sDelete(${s.id})">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('sensorList').innerHTML=hSimple;
+
+  // ├── Advanced Mode ──
+  let hAdv=barHtml;
+  for(const s of sensors){
+    const ageOk=s.hasValue&&s.ageS<300;
+    const ageWarn=s.hasValue&&s.ageS>=300&&s.ageS<900;
+    const ageErr=!s.hasValue||s.ageS>=900;
+    const statusClass=ageErr?'err':(ageWarn?'warn':'');
+    const valStr=s.hasValue?s.lastValue.toFixed(1)+(units[s.valueType]||''):'—';
+    const ageStr=s.hasValue?(s.ageS<60?s.ageS+'s':Math.floor(s.ageS/60)+'m'):'never';
+    hAdv+=`<div class="sensor-card-adv">
+      <div class="sensor-adv-status ${statusClass}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="sensor-adv-name">${s.name} <span class="tag tag-relay">${typeLabels[s.valueType]||'خام'}</span></div>
+        <div class="sensor-adv-info">
+          val: ${valStr} | age: ${ageStr}
+          <br>base: 0x${(s.baseCode>>>0).toString(16).toUpperCase().padStart(6,'0')} | ${s.valueBits}bit × ${s.scale}
+        </div>
+      </div>
+      <div class="sensor-adv-actions">
+        <button class="btn btn-ghost btn-sm" onclick="sOpenEdit(${s.id})">⚙️</button>
+        <button class="btn btn-danger btn-sm" onclick="sDelete(${s.id})">🗑️</button>
+      </div>
+    </div>`;
+  }
+  document.getElementById('sensorListAdv').innerHTML=hAdv;
+}

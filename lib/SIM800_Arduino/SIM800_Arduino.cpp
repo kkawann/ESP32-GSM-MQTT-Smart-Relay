@@ -75,6 +75,7 @@ void SIM800_Init(SIM800_t *sim, Stream *serial)
     sim->tcp_data_mode = false;
     sim->tcp_send_buffer.ready = false;
     sim->tcp_send_buffer.data = NULL;
+    sim->tcp_send_pending = false;
 
     // ✅ مقداردهی متغیرهای باینری
     sim->tcp_reading_binary = false;
@@ -1572,6 +1573,7 @@ static void SIM800_HandleTcpURC(SIM800_t *sim, const char *line)
             sim->tcp_send_buffer.data = NULL;
         }
         sim->tcp_send_buffer.ready = false;
+        sim->tcp_send_pending = false; // ✅ ارسال تموم شد
         sim->tcp_state = TCP_CONNECTED;
         return;
     }
@@ -1585,6 +1587,7 @@ static void SIM800_HandleTcpURC(SIM800_t *sim, const char *line)
             sim->tcp_send_buffer.data = NULL;
         }
         sim->tcp_send_buffer.ready = false;
+        sim->tcp_send_pending = false; // ✅ اتصال بسته شد
         sim->tcp_state = TCP_IDLE;
         if (sim->tcp_connect_callback)
             sim->tcp_connect_callback(false);
@@ -1619,6 +1622,7 @@ static void SIM800_TcpSendData(SIM800_t *sim)
     sim->serial->write(sim->tcp_send_buffer.data, sim->tcp_send_buffer.length);
 
     sim->tcp_state = TCP_SENDING;
+    sim->tcp_send_pending = true; // ✅ داده در حال ارسال
     sim->cmd_state = CMD_WAIT_RESPONSE;
     sim->expected_response = "SEND OK";
     sim->cmd_timeout = 10000;

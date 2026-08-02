@@ -246,6 +246,7 @@ typedef struct
     uint16_t tcp_rx_len;
     bool tcp_data_mode;
     TcpSendBuffer_t tcp_send_buffer;
+    bool tcp_send_pending; // ✅ آیا داده TCP در حال ارساله؟
     // ✅ این دو خط رو اضافه کن:
     bool tcp_reading_binary;
     uint16_t tcp_binary_len;

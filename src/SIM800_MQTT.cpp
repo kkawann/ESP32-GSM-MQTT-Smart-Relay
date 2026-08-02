@@ -300,6 +300,13 @@ bool MQTT_Subscribe(MqttClient_t *mqtt, const char *topic)
         return false;
     }
 
+    // ✅ اگه ارسال TCP قبلی تموم نشده، صبر کن
+    if (mqtt->sim->tcp_send_pending)
+    {
+        Serial.println("[MQTT] TCP busy, subscribe deferred");
+        return false;
+    }
+
     if (mqtt->topic_count >= MQTT_MAX_TOPICS)
     {
         Serial.println("[MQTT] Max topics reached");
@@ -331,6 +338,13 @@ bool MQTT_Publish(MqttClient_t *mqtt, const char *topic, const uint8_t *payload,
     if (mqtt->state != MQTT_CONNECTED)
     {
         Serial.println("[MQTT] Not connected");
+        return false;
+    }
+
+    // ✅ اگه ارسال TCP قبلی تموم نشده، منتظر بمان
+    if (mqtt->sim->tcp_send_pending)
+    {
+        Serial.println("[MQTT] TCP busy, publish deferred");
         return false;
     }
 
