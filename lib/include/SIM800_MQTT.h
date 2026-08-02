@@ -7,10 +7,10 @@
 // ============================================================================
 // Configuration
 // ============================================================================
-#define MQTT_MAX_PACKET_SIZE 256
+#define MQTT_MAX_PACKET_SIZE 1024
 #define MQTT_KEEPALIVE 60
 #define MQTT_SOCKET_TIMEOUT 15
-#define MQTT_MAX_TOPICS 4
+#define MQTT_MAX_TOPICS 8
 
 // ============================================================================
 // MQTT Packet Types

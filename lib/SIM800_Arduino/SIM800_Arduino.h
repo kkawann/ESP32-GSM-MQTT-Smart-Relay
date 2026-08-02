@@ -13,7 +13,7 @@
 #define SIM800_CMD_QUEUE_SIZE 8
 #define SIM800_MAX_INIT_RETRIES 3
 #define SIM800_WATCHDOG_TIMEOUT 300000UL // 5 min
-#define SIM800_TCP_BUFFER_SIZE 512
+#define SIM800_TCP_BUFFER_SIZE 1024
 #define SIM800_HTTP_BUFFER_SIZE 1024
 
 // ── Logging ──
@@ -211,6 +211,7 @@ typedef struct
     uint8_t net_hour;
     uint8_t net_minute;
     uint8_t net_second;
+    bool clockSyncGotCCLK; // ✅ پاسخ +CCLK دریافت شد
 
     // ── Callbacks ──
     void (*sms_callback)(const char *text, const char *sender);

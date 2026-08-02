@@ -108,11 +108,25 @@ void startClockSync()
     if (!sim800Ready || !networkReady)
         return;
 
+    // ✅ جلوگیری از تداخل clock sync با GPRS/TCP
+    // اگه GPRS در حال اتصال باشه، خواندن مستقیم سریال جواب GPRS رو می بلعه
+    if (sim800.gprs_state != GPRS_IDLE && sim800.gprs_state != GPRS_CONNECTED)
+    {
+        Serial.println("[CCLK] Skipped - GPRS busy");
+        return;
+    }
+    if (sim800.tcp_state != TCP_IDLE && sim800.tcp_state != TCP_CONNECTED)
+    {
+        Serial.println("[CCLK] Skipped - TCP busy");
+        return;
+    }
+
     clockSyncBuffer = "";
     clockRawBuffer = "";
     clockWaitingResp = true;
     clockSyncState = CSYNC_SENT;
     clockSyncStarted = millis();
+    sim800.clockSyncGotCCLK = false; // ✅ ریست فیلد قبل از ارسال دستور
 
     SIM800Serial.println("AT+CCLK?");
     Serial.println("[CCLK] Sent AT+CCLK?");
@@ -125,6 +139,7 @@ void processClockSync()
 
     unsigned long now = millis();
 
+    // ── Timeout ──
     if ((now - clockSyncStarted) >= CSYNC_TIMEOUT)
     {
         Serial.println("[CCLK] Timeout");
@@ -136,109 +151,30 @@ void processClockSync()
         return;
     }
 
-    // Read serial here only (not inside SIM800_Process)
-    while (SIM800Serial.available())
-    {
-        char c = (char)SIM800Serial.read();
-        clockRawBuffer += c;
-        lastSIM800Activity = now;
-    }
+    // ✅ خواندن مستقیم سریال حذف شد
+    // SIM800_Process() همیشه اجرا میشه و پاسخ +CCLK رو HandleURC پردازش میکنه
+    // فقط کافیه فیلد clockSyncGotCCLK رو چک کنیم
 
-    if (clockRawBuffer.indexOf("OK") < 0 &&
-        clockRawBuffer.indexOf("ERROR") < 0)
-    {
-        return; // incomplete response
-    }
+    if (!sim800.clockSyncGotCCLK)
+        return; // هنوز پاسخ نیومده
 
-    Serial.print("[CCLK] Raw: ");
-    Serial.println(clockRawBuffer);
+    // ✅ پاسخ +CCLK دریافت شد - زمان رو از فیلدهای SIM800 بخون
+    sim800.clockSyncGotCCLK = false;
 
-    int start = clockRawBuffer.indexOf("+CCLK: \"");
-    if (start < 0)
-        start = clockRawBuffer.indexOf("+CCLK:\"");
-
-    if (start < 0)
-    {
-        Serial.println("[CCLK] No +CCLK in response");
-        clockSyncState = CSYNC_IDLE;
-        clockRawBuffer = "";
-        clockSyncBuffer = "";
-        clockWaitingResp = false;
-        lastSyncAttempt = now;
-        return;
-    }
-
-    int q1 = clockRawBuffer.indexOf('"', start);
-    int q2 = clockRawBuffer.indexOf('"', q1 + 1);
-
-    if (q1 < 0 || q2 < 0 || q2 <= q1 + 1)
-    {
-        Serial.println("[CCLK] Quote parse failed");
-        clockSyncState = CSYNC_IDLE;
-        clockRawBuffer = "";
-        clockWaitingResp = false;
-        lastSyncAttempt = now;
-        return;
-    }
-
-    // Example content: 25/05/30,14:25:10+14
-    String content = clockRawBuffer.substring(q1 + 1, q2);
-    Serial.print("[CCLK] Content: ");
-    Serial.println(content);
-
-    int comma = content.indexOf(',');
-    if (comma < 0)
-    {
-        Serial.println("[CCLK] No comma found");
-        clockSyncState = CSYNC_IDLE;
-        clockRawBuffer = "";
-        clockWaitingResp = false;
-        lastSyncAttempt = now;
-        return;
-    }
-
-    String datePart = content.substring(0, comma);  // YY/MM/DD
-    String timeFull = content.substring(comma + 1); // HH:MM:SS±zz
-
-    // Strip timezone offset from time
-    String timePart = timeFull;
-    int plusIdx = timeFull.lastIndexOf('+');
-    int minusIdx = timeFull.lastIndexOf('-');
-    if (plusIdx > 5)
-        timePart = timeFull.substring(0, plusIdx);
-    if (minusIdx > 5)
-        timePart = timeFull.substring(0, minusIdx);
-
-    Serial.print("[CCLK] date=");
-    Serial.print(datePart);
-    Serial.print(" time=");
-    Serial.println(timePart);
-
-    if (datePart.length() < 8 || timePart.length() < 8)
-    {
-        Serial.println("[CCLK] Length check failed");
-        clockSyncState = CSYNC_IDLE;
-        clockRawBuffer = "";
-        clockWaitingResp = false;
-        lastSyncAttempt = now;
-        return;
-    }
-
-    uint8_t h = (uint8_t)timePart.substring(0, 2).toInt();
-    uint8_t mi = (uint8_t)timePart.substring(3, 5).toInt();
-    uint8_t s = (uint8_t)timePart.substring(6, 8).toInt();
-    uint16_t year = 2000 + (uint16_t)datePart.substring(0, 2).toInt();
-    uint8_t month = (uint8_t)datePart.substring(3, 5).toInt();
-    uint8_t day = (uint8_t)datePart.substring(6, 8).toInt();
+    uint8_t h   = sim800.net_hour;
+    uint8_t mi  = sim800.net_minute;
+    uint8_t s   = sim800.net_second;
+    uint16_t yr = 2000 + sim800.net_year;
+    uint8_t mo  = sim800.net_month;
+    uint8_t dy  = sim800.net_day;
 
     if (h > 23 || mi > 59 || s > 59 ||
-        month == 0 || month > 12 ||
-        day == 0 || day > 31)
+        mo == 0 || mo > 12 ||
+        dy == 0 || dy > 31)
     {
         Serial.printf("[CCLK] Validation failed: %d/%d/%d %d:%d:%d\n",
-                      year, month, day, h, mi, s);
+                      yr, mo, dy, h, mi, s);
         clockSyncState = CSYNC_IDLE;
-        clockRawBuffer = "";
         clockWaitingResp = false;
         lastSyncAttempt = now;
         return;
@@ -250,9 +186,9 @@ void processClockSync()
         internalClock.hour = h;
         internalClock.minute = mi;
         internalClock.second = s;
-        internalClock.day = day;
-        internalClock.month = month;
-        internalClock.year = year;
+        internalClock.day = dy;
+        internalClock.month = mo;
+        internalClock.year = yr;
         internalClock.lastUpdate = now;
         internalClock.isValid = true;
         xSemaphoreGive(mutexClock);
@@ -265,12 +201,12 @@ void processClockSync()
     lastClockSync = now;
     lastSyncAttempt = now;
     clockSyncState = CSYNC_IDLE;
-    clockRawBuffer = "";
     clockSyncBuffer = "";
+    clockRawBuffer = "";
     clockWaitingResp = false;
 
     Serial.printf("[CCLK] Clock synced: %04d/%02d/%02d %02d:%02d:%02d\n",
-                  year, month, day, h, mi, s);
+                  yr, mo, dy, h, mi, s);
 
     addLog(4, 0, "Clock synced via GSM");
 }

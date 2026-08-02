@@ -8,68 +8,81 @@ const char HTML[] PROGMEM = R"rawliteral(
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Smart Relay Pro</title>
 <style>
-/* بقیه کدهای CSS سر جای خودشون می‌مونن */
 :root{
---primary:#6c63ff;--primary-dark:#5a52d5;
---success:#00c851;--danger:#ff4444;
---warning:#ffbb33;--info:#33b5e5;
---bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;
---text:#e0e0e0;--text2:#a0a0b0;
---border:#2a2a4a;--radius:14px;
---shadow:0 8px 32px rgba(0,0,0,.4);
+/* muted dark palette — 2 accent فقط */
+--bg:#0e1116;--bg-soft:#161a22;
+--card:#1a1f29;--card-2:#20262f;--card-3:#272e39;
+--text:#e6e9ef;--text-2:#9098a8;--text-3:#6b7283;
+--border:#2a303c;--border-2:#353c4a;
+--primary:#7c8cff;--primary-2:#5b6cff;--primary-soft:rgba(124,140,255,.14);
+--success:#3ddc97;--success-soft:rgba(61,220,151,.14);
+--danger:#ff6b6b;--danger-soft:rgba(255,107,107,.14);
+--warning:#ffb74d;--warning-soft:rgba(255,183,77,.14);
+--info:#5cc8ff;--info-soft:rgba(92,200,255,.14);
+--radius:14px;--radius-sm:10px;--radius-lg:18px;
+--shadow:0 6px 24px rgba(0,0,0,.28);
+--shadow-hi:0 0 0 1px var(--border),0 6px 18px rgba(0,0,0,.25);
 }
 *{margin:0;padding:0;box-sizing:border-box;
   font-family:'Segoe UI',Tahoma,sans-serif;
   -webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--text);
-     min-height:100vh;padding-bottom:80px}
+     min-height:100vh;padding-bottom:72px;line-height:1.45}
 ::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:var(--card)}
-::-webkit-scrollbar-thumb{background:var(--primary);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px}
 
 /* ── Header ── */
 .header{
-  background:linear-gradient(135deg,var(--primary),#a855f7);
-  padding:16px 20px 60px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#3a4258,#2a2f44);
+  padding:14px 16px 18px;position:relative;overflow:hidden;
 }
-.header::before{
-  content:'';position:absolute;top:-50%;left:-50%;
-  width:200%;height:200%;
-  background:radial-gradient(circle,rgba(255,255,255,.05) 0%,transparent 70%);
+.header::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 20% 0%,rgba(124,140,255,.12),transparent 60%);}
+.header-row{display:flex;align-items:center;justify-content:space-between;position:relative}
+.header-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.header h1{font-size:17px;font-weight:700;color:#fff;letter-spacing:.2px}
+.header p{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px}
+.version-badge{
+  display:inline-flex;align-items:center;padding:2px 8px;
+  border-radius:6px;font-size:10px;font-weight:700;
+  background:rgba(124,140,255,.18);color:#c8d0ff;
+  border:1px solid rgba(124,140,255,.25);letter-spacing:.5px;
 }
-.header h1{font-size:20px;font-weight:700;color:#fff;position:relative}
-.header p{font-size:11px;color:rgba(255,255,255,.7);margin-top:3px;position:relative}
-.header-badges{display:flex;gap:6px;margin-top:8px;position:relative;flex-wrap:wrap}
-.hbadge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
-        background:rgba(255,255,255,.15);color:#fff;
-        display:flex;align-items:center;gap:4px;}
-.hbadge.ok{background:rgba(0,200,81,.3)}
-.hbadge.err{background:rgba(255,68,68,.3)}
+.header-time{font-size:11px;color:rgba(255,255,255,.7);text-align:left;font-variant-numeric:tabular-nums}
+.header-uptime{font-size:13px;color:#fff;font-weight:700;text-align:left;margin-top:1px;font-variant-numeric:tabular-nums}
+.header-badges{display:flex;gap:6px;margin-top:10px;position:relative;flex-wrap:wrap}
+.hbadge{padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700;
+        background:rgba(255,255,255,.08);color:#cfd5e8;
+        display:flex;align-items:center;gap:4px;transition:.2s}
+.hbadge.ok{background:var(--success-soft);color:var(--success)}
+.hbadge.err{background:var(--danger-soft);color:var(--danger)}
 
-/* ── Bottom Nav ── */
+/* ── Bottom Nav (icon-only) ── */
 .bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;
+  position:fixed;bottom:0;left:0;right:0;height:64px;
   background:var(--card);border-top:1px solid var(--border);
   display:flex;z-index:100;
   padding-bottom:env(safe-area-inset-bottom);
-  box-shadow:0 -4px 20px rgba(0,0,0,.3);
 }
 .nav-btn{
-  flex:1;padding:10px 4px 8px;border:none;background:none;
-  color:var(--text2);cursor:pointer;transition:.3s;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:9px;font-weight:600;
+  flex:1;padding:0;border:none;background:none;
+  color:var(--text-3);cursor:pointer;transition:color .25s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;position:relative;
 }
-.nav-btn .icon{font-size:20px;transition:.3s}
+.nav-btn .icon{font-size:22px;line-height:1;transition:transform .25s}
 .nav-btn.active{color:var(--primary)}
-.nav-btn.active .icon{transform:translateY(-2px)}
+.nav-btn.active .icon{transform:translateY(-2px) scale(1.08)}
 .nav-indicator{
-  position:absolute;top:0;height:2px;
-  background:var(--primary);border-radius:0 0 2px 2px;transition:.3s;
+  position:absolute;top:0;height:3px;width:16.66%;
+  background:var(--primary);border-radius:0 0 4px 4px;
+  transition:right .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 2px 8px rgba(124,140,255,.4);
 }
 
 /* ── Pages ── */
-.page{display:none;padding:16px;margin-top:-44px}
+.page{display:none;padding:14px;margin-top:-12px}
 .page.active{display:block}
 
 /* ── Cards ── */
@@ -77,148 +90,158 @@ body{background:var(--bg);color:var(--text);
       padding:16px;margin-bottom:12px;
       border:1px solid var(--border);box-shadow:var(--shadow);}
 .card-title{font-size:13px;font-weight:700;color:var(--text);
-            margin-bottom:12px;display:flex;align-items:center;gap:8px;}
-.card-title .icon{width:28px;height:28px;
-  background:linear-gradient(135deg,var(--primary),#a855f7);
-  border-radius:8px;display:flex;align-items:center;
-  justify-content:center;font-size:14px;}
+            margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.card-title .icon{width:30px;height:30px;
+  background:var(--primary-soft);color:var(--primary);
+  border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0}
+.card-title .right{margin-right:auto;display:flex;align-items:center;gap:6px}
 
 /* ── Relay Grid ── */
 .relay-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.relay-card{background:var(--card2);border-radius:12px;padding:14px;
-            border:1px solid var(--border);transition:.3s;
+.relay-card{background:var(--card-2);border-radius:12px;padding:14px;
+            border:1px solid var(--border);transition:.25s;
             cursor:pointer;position:relative;overflow:hidden;}
+.relay-card:active{transform:scale(.98)}
 .relay-card.on{border-color:var(--success);
-  box-shadow:0 0 20px rgba(0,200,81,.2);}
+  box-shadow:0 0 16px var(--success-soft);}
 .relay-card.on::before{content:'';position:absolute;top:0;left:0;right:0;
-  height:2px;background:linear-gradient(90deg,var(--success),#00ff88);}
-.relay-name{font-size:12px;font-weight:700;margin-bottom:4px}
+  height:2px;background:linear-gradient(90deg,var(--success),var(--primary));}
+.relay-name{font-size:13px;font-weight:700;margin-bottom:5px}
 .relay-status{display:flex;align-items:center;gap:6px;
-  font-size:10px;color:var(--text2);margin-bottom:10px;}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--danger)}
-.dot.on{background:var(--success);box-shadow:0 0 6px var(--success);
+  font-size:11px;color:var(--text-2);margin-bottom:10px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--danger);flex-shrink:0}
+.dot.on{background:var(--success);box-shadow:0 0 8px var(--success);
   animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.relay-toggle{width:100%;padding:8px;border:none;border-radius:8px;
-  font-size:11px;font-weight:700;cursor:pointer;transition:.3s;}
-.relay-toggle.off-btn{background:rgba(0,200,81,.15);color:var(--success)}
-.relay-toggle.on-btn{background:rgba(255,68,68,.15);color:var(--danger)}
-.relay-timer{font-size:9px;color:var(--warning);margin-top:6px;text-align:center;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.relay-toggle{width:100%;padding:9px;border:none;border-radius:9px;
+  font-size:12px;font-weight:700;cursor:pointer;transition:.2s;}
+.relay-toggle:active{transform:scale(.97)}
+.relay-toggle.off-btn{background:var(--success-soft);color:var(--success)}
+.relay-toggle.on-btn{background:var(--danger-soft);color:var(--danger)}
+.relay-timer{font-size:10px;color:var(--warning);margin-top:7px;text-align:center;font-weight:700}
 
 /* ── Quick Buttons ── */
 .quick-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.quick-btn{flex:1;min-width:80px;padding:10px 8px;border:none;
-  border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;
-  transition:.3s;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.quick-btn{flex:1;min-width:84px;padding:11px 8px;border:none;
+  border-radius:10px;font-size:11.5px;font-weight:700;cursor:pointer;
+  transition:.2s;display:flex;flex-direction:column;align-items:center;gap:5px;}
 .quick-btn:active{transform:scale(.95)}
-.qb-alloff{background:rgba(255,68,68,.15);color:var(--danger);border:1px solid rgba(255,68,68,.3)}
-.qb-allon{background:rgba(0,200,81,.15);color:var(--success);border:1px solid rgba(0,200,81,.3)}
-.qb-status{background:rgba(108,99,255,.15);color:var(--primary);border:1px solid rgba(108,99,255,.3)}
+.quick-btn .qicon{font-size:22px;line-height:1}
+.qb-alloff{background:var(--danger-soft);color:var(--danger);border:1px solid var(--border)}
+.qb-allon{background:var(--success-soft);color:var(--success);border:1px solid var(--border)}
+.qb-status{background:var(--primary-soft);color:var(--primary);border:1px solid var(--border)}
 
 /* ── Stats ── */
 .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.stat-item{background:var(--card2);border-radius:10px;padding:10px;
+.stat-item{background:var(--card-2);border-radius:10px;padding:10px;
   text-align:center;border:1px solid var(--border);}
 .stat-val{font-size:18px;font-weight:700;margin:4px 0}
-.stat-lbl{font-size:9px;color:var(--text2)}
+.stat-lbl{font-size:10px;color:var(--text-2)}
 .stat-ok{color:var(--success)}
 .stat-err{color:var(--danger)}
 .stat-num{color:var(--primary)}
 
 /* ── Forms ── */
 .form-group{margin-bottom:12px}
-.form-label{font-size:11px;font-weight:700;color:var(--text2);
+.form-label{font-size:12px;font-weight:600;color:var(--text-2);
   margin-bottom:6px;display:block;}
 input,select,textarea{
-  width:100%;padding:10px 12px;background:var(--card2);
+  width:100%;padding:10px 12px;background:var(--card-2);
   border:1px solid var(--border);border-radius:10px;
-  color:var(--text);font-size:12px;transition:.3s;outline:none;}
-input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+  color:var(--text);font-size:12px;transition:.2s;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);background:var(--card-3)}
 select option{background:var(--card)}
-input[type=checkbox]{width:auto;width:18px;height:18px;
+input[type=checkbox]{width:18px;height:18px;
   cursor:pointer;accent-color:var(--primary);}
 .checkbox-row{display:flex;align-items:center;gap:8px;padding:10px 12px;
-  background:var(--card2);border:1px solid var(--border);border-radius:10px;}
+  background:var(--card-2);border:1px solid var(--border);border-radius:10px;}
 .checkbox-row label{font-size:12px;cursor:pointer;flex:1}
 
 /* ── Buttons ── */
 .btn{padding:10px 16px;border:none;border-radius:10px;
-  font-size:12px;font-weight:700;cursor:pointer;transition:.3s;
+  font-size:12px;font-weight:700;cursor:pointer;transition:.2s;
   display:inline-flex;align-items:center;gap:6px;justify-content:center;}
 .btn:active{transform:scale(.97)}
-.btn-primary{background:linear-gradient(135deg,var(--primary),#a855f7);color:#fff}
-.btn-success{background:linear-gradient(135deg,var(--success),#00ff88);color:#000}
-.btn-danger{background:linear-gradient(135deg,var(--danger),#ff6b6b);color:#fff}
-.btn-warning{background:linear-gradient(135deg,var(--warning),#ffdd00);color:#000}
-.btn-ghost{background:var(--card2);color:var(--text);border:1px solid var(--border)}
-.btn-sm{padding:6px 12px;font-size:11px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:active{background:var(--primary-2)}
+.btn-success{background:var(--success);color:#063d28}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--warning);color:#3a2400}
+.btn-ghost{background:var(--card-2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:active{background:var(--card-3)}
+.btn-sm{padding:7px 12px;font-size:11px}
 .btn-block{width:100%}
 .btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .btn-row .btn{flex:1}
+.btn-icon{padding:8px 10px}
 
 /* ── List Items ── */
-.list-item{background:var(--card2);border-radius:10px;padding:12px;
+.list-item{background:var(--card-2);border-radius:10px;padding:12px;
   margin-bottom:8px;border:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;transition:.3s;}
-.list-item:hover{border-color:var(--primary)}
-.item-icon{width:36px;height:36px;border-radius:10px;
-  background:linear-gradient(135deg,var(--primary),#a855f7);
+  display:flex;align-items:center;gap:10px;transition:.25s;}
+.list-item:hover{border-color:var(--border-2)}
+.item-icon{width:38px;height:38px;border-radius:10px;
+  background:var(--primary-soft);color:var(--primary);
   display:flex;align-items:center;justify-content:center;
-  font-size:16px;flex-shrink:0;}
+  font-size:17px;flex-shrink:0;}
+.item-icon.success{background:var(--success-soft);color:var(--success)}
+.item-icon.warn{background:var(--warning-soft);color:var(--warning)}
+.item-icon.danger{background:var(--danger-soft);color:var(--danger)}
 .item-body{flex:1;min-width:0}
-.item-title{font-size:12px;font-weight:700;margin-bottom:3px}
-.item-sub{font-size:10px;color:var(--text2);line-height:1.4}
+.item-title{font-size:13px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.item-sub{font-size:11px;color:var(--text-2);line-height:1.5}
 .item-actions{display:flex;gap:6px;flex-shrink:0}
 
 /* ── Tags ── */
 .tag{display:inline-flex;align-items:center;gap:3px;
-  padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;margin:2px;}
-.tag-single{background:rgba(51,181,229,.2);color:var(--info)}
-.tag-double{background:rgba(168,85,247,.2);color:#a855f7}
-.tag-long{background:rgba(255,187,51,.2);color:var(--warning)}
-.tag-triple{background:rgba(255,68,68,.2);color:var(--danger)}
-.tag-scene{background:rgba(108,99,255,.2);color:var(--primary)}
-.tag-relay{background:rgba(0,200,81,.2);color:var(--success)}
+  padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;margin:2px;}
+.tag-single{background:var(--info-soft);color:var(--info)}
+.tag-double{background:var(--primary-soft);color:var(--primary)}
+.tag-long{background:var(--warning-soft);color:var(--warning)}
+.tag-triple{background:var(--danger-soft);color:var(--danger)}
+.tag-scene{background:var(--primary-soft);color:var(--primary)}
+.tag-relay{background:var(--success-soft);color:var(--success)}
 
 /* ── Learn Box ── */
-.learn-box{background:var(--card2);border-radius:12px;padding:20px;
-  text-align:center;border:2px dashed var(--border);
-  transition:.5s;margin-bottom:12px;}
+.learn-box{background:var(--card-2);border-radius:12px;padding:20px;
+  text-align:center;border:2px dashed var(--border-2);
+  transition:.4s;margin-bottom:12px;}
 .learn-box.active{border-color:var(--primary);
-  background:rgba(108,99,255,.08);
-  animation:glow .8s ease-in-out infinite alternate;}
+  background:var(--primary-soft);
+  animation:glow 1.2s ease-in-out infinite alternate;}
 @keyframes glow{
-  from{box-shadow:0 0 10px rgba(108,99,255,.2)}
-  to{box-shadow:0 0 30px rgba(108,99,255,.5)}}
+  from{box-shadow:0 0 8px rgba(124,140,255,.15)}
+  to{box-shadow:0 0 24px rgba(124,140,255,.4)}}
 .learn-icon{font-size:40px;margin-bottom:8px;display:block}
 .learn-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.learn-sub{font-size:11px;color:var(--text2);margin-bottom:12px}
-.learn-countdown{font-size:32px;font-weight:700;color:var(--primary);margin:8px 0;}
+.learn-sub{font-size:11.5px;color:var(--text-2);margin-bottom:12px}
+.learn-countdown{font-size:34px;font-weight:700;color:var(--primary);margin:8px 0;font-variant-numeric:tabular-nums}
 .code-display{background:var(--bg);border:1px solid var(--primary);
-  padding:10px;border-radius:8px;font-family:monospace;font-size:13px;
+  padding:11px;border-radius:8px;font-family:monospace;font-size:13px;
   color:var(--primary);text-align:center;margin:8px 0;letter-spacing:2px;}
 
 /* ── Step Cards ── */
-.step-card{background:var(--bg);border-radius:10px;padding:10px;
+.step-card{background:var(--card-2);border-radius:10px;padding:12px;
   margin-bottom:8px;border:1px solid var(--border);position:relative;}
 .step-num{position:absolute;top:-8px;right:10px;
-  background:var(--primary);color:#fff;width:20px;height:20px;
-  border-radius:50%;font-size:10px;font-weight:700;
+  background:var(--primary);color:#fff;width:22px;height:22px;
+  border-radius:50%;font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;}
 .step-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
 
 /* ── Toast ── */
-.toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);
+.toast-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);
   z-index:9999;display:flex;flex-direction:column;gap:6px;
   min-width:200px;max-width:90vw;}
 .toast{padding:10px 16px;border-radius:10px;font-size:12px;font-weight:700;
   display:flex;align-items:center;gap:8px;
-  animation:slideDown .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+  animation:slideDown .3s ease;box-shadow:0 6px 20px rgba(0,0,0,.4);}
 @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
-.toast.success{background:var(--success);color:#000}
+.toast.success{background:var(--success);color:#063d28}
 .toast.error{background:var(--danger);color:#fff}
 .toast.info{background:var(--primary);color:#fff}
-.toast.warning{background:var(--warning);color:#000}
+.toast.warning{background:var(--warning);color:#3a2400}
 
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);
@@ -229,7 +252,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
   padding:20px;transform:translateY(100%);transition:.3s;
   max-height:85vh;overflow-y:auto;}
 .modal-overlay.open .modal{transform:translateY(0)}
-.modal-handle{width:40px;height:4px;background:var(--border);
+.modal-handle{width:40px;height:4px;background:var(--border-2);
   border-radius:2px;margin:0 auto 16px;}
 .modal-title{font-size:15px;font-weight:700;margin-bottom:16px}
 
@@ -241,83 +264,85 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 .confirm-box{background:var(--card);border-radius:16px;padding:24px;
   text-align:center;max-width:300px;width:100%;border:1px solid var(--border);}
 .confirm-box h3{font-size:16px;margin-bottom:8px}
-.confirm-box p{font-size:12px;color:var(--text2);margin-bottom:20px}
+.confirm-box p{font-size:12px;color:var(--text-2);margin-bottom:20px}
 .confirm-btns{display:flex;gap:10px}
 .confirm-btns .btn{flex:1}
 
 /* ── Empty ── */
-.empty{text-align:center;padding:40px 20px;color:var(--text2);}
-.empty .empty-icon{font-size:48px;margin-bottom:12px;display:block;opacity:.5}
+.empty{text-align:center;padding:40px 20px;color:var(--text-2);}
+.empty .empty-icon{font-size:48px;margin-bottom:12px;display:block;opacity:.4}
 .empty p{font-size:12px}
 
 /* ── Dividers & Sections ── */
 .divider{height:1px;background:var(--border);margin:16px 0}
-.section-title{font-size:11px;font-weight:700;color:var(--text2);
+.section-title{font-size:11px;font-weight:700;color:var(--text-2);
   text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
 
 /* ── Settings Rows ── */
 .setting-row{display:flex;align-items:center;justify-content:space-between;
-  padding:12px 0;border-bottom:1px solid var(--border);}
+  padding:14px 0;border-bottom:1px solid var(--border);gap:12px}
 .setting-row:last-child{border-bottom:none}
-.setting-info .setting-title{font-size:12px;font-weight:700}
-.setting-info .setting-desc{font-size:10px;color:var(--text2);margin-top:2px}
-.toggle-switch{width:44px;height:24px;background:var(--border);
-  border-radius:12px;cursor:pointer;position:relative;transition:.3s;flex-shrink:0;}
+.setting-info .setting-title{font-size:13px;font-weight:700}
+.setting-info .setting-desc{font-size:11px;color:var(--text-2);margin-top:2px}
+.toggle-switch{width:44px;height:24px;background:var(--border-2);
+  border-radius:12px;cursor:pointer;position:relative;transition:.25s;flex-shrink:0;}
 .toggle-switch.on{background:var(--success)}
 .toggle-switch::after{content:'';position:absolute;top:2px;right:2px;
-  width:20px;height:20px;background:#fff;border-radius:50%;transition:.3s;}
+  width:20px;height:20px;background:#fff;border-radius:50%;transition:.25s;}
 .toggle-switch.on::after{right:22px}
 
 /* ── Logs ── */
-.log-item{background:var(--card2);border-right:3px solid var(--primary);
+.log-item{background:var(--card-2);border-right:3px solid var(--primary);
   border-radius:6px;padding:8px 10px;margin-bottom:6px;
-  font-size:11px;line-height:1.6;}
+  font-size:11.5px;line-height:1.6;}
 .log-item.warn{border-color:var(--warning)}
 .log-item.err{border-color:var(--danger)}
-.log-time{color:var(--text2);font-size:9px;font-family:monospace;margin-bottom:2px}
+.log-time{color:var(--text-2);font-size:10px;font-family:monospace;margin-bottom:2px}
 .log-type{display:inline-block;padding:1px 6px;border-radius:4px;
-  font-size:9px;font-weight:700;margin-left:4px;}
-.log-type.relay{background:rgba(0,200,81,.2);color:var(--success)}
-.log-type.scene{background:rgba(108,99,255,.2);color:var(--primary)}
-.log-type.rf{background:rgba(255,187,51,.2);color:var(--warning)}
-.log-type.sms{background:rgba(51,181,229,.2);color:var(--info)}
-.log-type.sys{background:rgba(255,68,68,.2);color:var(--danger)}
+  font-size:10px;font-weight:700;margin-left:4px;}
+.log-type.relay{background:var(--success-soft);color:var(--success)}
+.log-type.scene{background:var(--primary-soft);color:var(--primary)}
+.log-type.rf{background:var(--warning-soft);color:var(--warning)}
+.log-type.sms{background:var(--info-soft);color:var(--info)}
+.log-type.sys{background:var(--danger-soft);color:var(--danger)}
 
-/* ── Sensor Cards (Simple) ── */
+/* ── Sensor Cards ── */
 .sensor-card{
-  background:var(--card2);border-radius:12px;padding:14px;
+  background:var(--card-2);border-radius:12px;padding:14px;
   border:1px solid var(--border);margin-bottom:10px;
   display:flex;align-items:center;gap:12px;
 }
 .sensor-icon-wrap{
   width:48px;height:48px;border-radius:12px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;font-size:24px;
-  background:linear-gradient(135deg,var(--primary),#a855f7);
+  background:var(--primary-soft);color:var(--primary);
 }
-.sensor-icon-wrap.online{background:linear-gradient(135deg,var(--success),#00ff88)}
-.sensor-icon-wrap.offline{background:rgba(255,68,68,.3)}
+.sensor-icon-wrap.online{background:var(--success-soft);color:var(--success)}
+.sensor-icon-wrap.offline{background:var(--danger-soft);color:var(--danger)}
 .sensor-val{font-size:22px;font-weight:700;color:var(--text)}
-.sensor-unit{font-size:11px;color:var(--text2)}
-.sensor-name-lbl{font-size:12px;font-weight:700}
-.sensor-age{font-size:10px;color:var(--text2);margin-top:2px}
+.sensor-unit{font-size:11px;color:var(--text-2)}
+.sensor-name-lbl{font-size:13px;font-weight:700}
+.sensor-age{font-size:11px;color:var(--text-2);margin-top:2px}
+.sensor-right{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.sensor-buttons{display:flex;gap:4px}
 
 /* ── Profile Picker ── */
 .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
 .profile-btn{
-  background:var(--card2);border:2px solid var(--border);
+  background:var(--card-2);border:2px solid var(--border);
   border-radius:12px;padding:14px 10px;cursor:pointer;
-  text-align:center;transition:.3s;
+  text-align:center;transition:.25s;
 }
 .profile-btn:hover,.profile-btn.selected{border-color:var(--primary);
-  background:rgba(108,99,255,.1);}
+  background:var(--primary-soft);}
 .profile-btn .pb-icon{font-size:28px;margin-bottom:6px;display:block}
-.profile-btn .pb-name{font-size:11px;font-weight:700}
-.profile-btn .pb-desc{font-size:9px;color:var(--text2);margin-top:2px}
+.profile-btn .pb-name{font-size:12px;font-weight:700}
+.profile-btn .pb-desc{font-size:10px;color:var(--text-2);margin-top:2px}
 
 /* ── Wizard ── */
 .wizard-step{
-  background:var(--card2);border-radius:12px;
-  padding:20px;margin-bottom:12px;
+  background:var(--card-2);border-radius:12px;
+  padding:18px;margin-bottom:12px;
   border:1px solid var(--border);
 }
 .wizard-num{
@@ -330,35 +355,66 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 
 /* ── Template Cards ── */
 .template-card{
-  background:var(--card2);border-radius:14px;padding:16px;
+  background:var(--card-2);border-radius:14px;padding:16px;
   border:1px solid var(--border);margin-bottom:10px;
-  cursor:pointer;transition:.3s;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:.25s;display:flex;align-items:center;gap:14px;
 }
-.template-card:hover{border-color:var(--primary);
-  box-shadow:0 0 20px rgba(108,99,255,.2);}
+.template-card:hover,.template-card:active{border-color:var(--primary);
+  box-shadow:0 0 16px var(--primary-soft);}
 .template-icon{font-size:32px;flex-shrink:0}
 .template-name{font-size:13px;font-weight:700}
-.template-desc{font-size:11px;color:var(--text2);margin-top:3px}
+.template-desc{font-size:11px;color:var(--text-2);margin-top:3px}
 
 /* ── Mode Toggle ── */
 .mode-bar{
-  display:flex;background:var(--card2);border-radius:10px;
+  display:flex;background:var(--card-2);border-radius:10px;
   padding:3px;margin-bottom:16px;border:1px solid var(--border);
 }
 .mode-tab{
-  flex:1;padding:8px;border:none;background:none;
-  color:var(--text2);font-size:11px;font-weight:700;
-  cursor:pointer;border-radius:8px;transition:.3s;
+  flex:1;padding:9px;border:none;background:none;
+  color:var(--text-2);font-size:11.5px;font-weight:700;
+  cursor:pointer;border-radius:8px;transition:.25s;
 }
 .mode-tab.active{background:var(--primary);color:#fff}
 
 /* ── Action Group ── */
-.action-group{background:var(--bg);border-radius:10px;padding:10px;
+.action-group{background:var(--bg-soft);border-radius:10px;padding:10px;
   margin-bottom:8px;border-left:3px solid var(--primary);}
 .action-label{font-size:10px;font-weight:700;color:var(--primary);
   margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
 .action-row{display:flex;gap:6px;align-items:center}
 .action-row>*{flex:1}
+
+/* ── Utility ── */
+.m0{margin:0}
+.mt6{margin-top:6px}
+.mt8{margin-top:8px}
+.mt10{margin-top:10px}
+.mt12{margin-top:12px}
+.mr-auto{margin-right:auto}
+.fs10{font-size:10px}
+.fs11{font-size:11px}
+.fs12{font-size:12px}
+.c2{color:var(--text-2)}
+.flex{display:flex}
+.flex-col{display:flex;flex-direction:column}
+.aic{align-items:center}
+.jcsb{justify-content:space-between}
+.gap4{gap:4px}
+.gap6{gap:6px}
+.gap8{gap:8px}
+.wrap{flex-wrap:wrap}
+.ltr{direction:ltr}
+.mono{font-family:monospace}
+.text-left{text-align:left}
+.c-warn{color:var(--warning)}
+.c-success{color:var(--success)}
+.flex1{flex:1}
+.weekday-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.weekday-picker label{display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer}
+.weekday-picker input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary)}
+.counter{font-size:10px;color:var(--text-2);margin-right:auto}
+.counter-adv{margin-right:auto}
 
 @media(min-width:480px){
   .relay-grid{grid-template-columns:repeat(4,1fr)}
@@ -383,14 +439,17 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 
 <!-- ══════════════ HEADER ══════════════ -->
 <div class="header">
-  <div style="display:flex;align-items:center;justify-content:space-between">
+  <div class="header-row">
     <div>
-      <h1>⚡ Smart Relay Pro_v1.6.1</h1>
+      <div class="header-title">
+        <h1>⚡ Smart Relay Pro</h1>
+        <span class="version-badge">v1.6.1</span>
+      </div>
       <p id="headerSub">در حال بارگذاری...</p>
     </div>
-    <div style="text-align:left">
-      <div style="font-size:9px;color:rgba(255,255,255,.7)" id="headerTime">--:--</div>
-      <div style="font-size:10px;color:#fff;font-weight:700" id="headerUptime">0s</div>
+    <div class="text-left">
+      <div class="header-time" id="headerTime">--:--</div>
+      <div class="header-uptime" id="headerUptime">0s</div>
     </div>
   </div>
   <div class="header-badges" id="headerBadges">
@@ -405,13 +464,13 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 <div class="page active" id="p0">
   <div class="quick-row">
     <button class="quick-btn qb-alloff" onclick="allOff()">
-      <span style="font-size:20px">🔴</span>همه خاموش
+      <span class="qicon">🔴</span>همه خاموش
     </button>
     <button class="quick-btn qb-allon" onclick="allOn()">
-      <span style="font-size:20px">🟢</span>همه روشن
+      <span class="qicon">🟢</span>همه روشن
     </button>
     <button class="quick-btn qb-status" onclick="doRefresh()">
-      <span style="font-size:20px">🔄</span>بروزرسانی
+      <span class="qicon">🔄</span>بروزرسانی
     </button>
   </div>
   <div class="card">
@@ -452,7 +511,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 
       <!-- مرحله ۱: انتخاب نوع -->
       <div id="sStep1">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        <p class="fs12 c2" style="margin-bottom:14px">
           چه نوع سنسوری دارید؟
         </p>
         <div class="profile-grid" id="profileGrid">
@@ -462,11 +521,11 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 
       <!-- مرحله ۲: نام + یادگیری -->
       <div id="sStep2" style="display:none">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="flex aic gap8" style="margin-bottom:14px">
           <span id="sStep2Icon" style="font-size:32px"></span>
           <div>
             <div id="sStep2Title" style="font-size:14px;font-weight:700"></div>
-            <div id="sStep2Desc" style="font-size:11px;color:var(--text2)"></div>
+            <div id="sStep2Desc" class="fs11 c2"></div>
           </div>
         </div>
         <div class="form-group">
@@ -492,7 +551,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
           </div>
           <div id="sSimpleLearnDone" style="display:none">
             <div class="code-display" id="sSimpleCode">--</div>
-            <p style="font-size:11px;color:var(--success);text-align:center;margin-bottom:12px">
+            <p class="fs11 c-success" style="text-align:center;margin-bottom:12px">
               ✅ سنسور شناسایی شد!
             </p>
           </div>
@@ -508,7 +567,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
     <div class="card">
       <div class="card-title">
         <div class="icon">📋</div>سنسورهای من
-        <span style="margin-right:auto;font-size:10px;color:var(--text2)" id="sensorCounter">۰</span>
+        <span class="counter" id="sensorCounter">۰</span>
         <button class="btn btn-ghost btn-sm" onclick="loadSensorsPage()">🔄</button>
       </div>
       <div id="sensorList">
@@ -522,7 +581,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
     <div class="card">
       <div class="card-title"><div class="icon">🌡️</div>یادگیری سنسور (پیشرفته)</div>
       <div id="sLearnIdle">
-        <p style="font-size:11px;color:var(--text2);margin-bottom:12px">
+        <p class="fs11 c2" style="margin-bottom:12px">
           کنترل کامل روی پارامترهای سنسور — برای کاربران حرفه‌ای.
         </p>
         <button class="btn btn-primary btn-block" onclick="sLearnStart()">📊 شروع یادگیری</button>
@@ -555,16 +614,16 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
           </select>
         </div>
         <div class="step-grid">
-          <div class="form-group" style="margin:0">
+          <div class="form-group m0">
             <label class="form-label">بیت مقدار:</label>
             <input type="number" id="sNewValueBits" value="8" min="1" max="32">
           </div>
-          <div class="form-group" style="margin:0">
+          <div class="form-group m0">
             <label class="form-label">ضریب (Scale):</label>
             <input type="number" id="sNewScale" value="1.0" step="0.01">
           </div>
         </div>
-        <div class="form-group" style="margin-top:8px">
+        <div class="form-group mt8">
           <label class="form-label">جابجایی (Offset):</label>
           <input type="number" id="sNewOffset" value="0" step="0.1">
         </div>
@@ -577,7 +636,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
     <div class="card">
       <div class="card-title">
         <div class="icon">📋</div>سنسورهای ثبت‌شده (پیشرفته)
-        <button class="btn btn-ghost btn-sm" onclick="loadSensorsPage()" style="margin-right:auto">🔄</button>
+        <button class="btn btn-ghost btn-sm counter-adv" onclick="loadSensorsPage()">🔄</button>
       </div>
       <div id="sensorListAdv">
         <div class="empty"><span class="empty-icon">🌡️</span><p>هیچ سنسوری ثبت نشده</p></div>
@@ -604,16 +663,16 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
         </select>
       </div>
       <div class="step-grid">
-        <div class="form-group" style="margin:0">
+        <div class="form-group m0">
           <label class="form-label">بیت مقدار:</label>
           <input type="number" id="sEditValueBits" min="1" max="32">
         </div>
-        <div class="form-group" style="margin:0">
+        <div class="form-group m0">
           <label class="form-label">ضریب:</label>
           <input type="number" id="sEditScale" step="0.01">
         </div>
       </div>
-      <div class="form-group" style="margin-top:8px">
+      <div class="form-group mt8">
         <label class="form-label">Offset:</label>
         <input type="number" id="sEditOffset" step="0.1">
       </div>
@@ -641,7 +700,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
   <div id="aSimpleMode">
     <div class="card">
       <div class="card-title"><div class="icon">🤖</div>افزودن اتوماسیون</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">
+      <p class="fs12 c2" style="margin-bottom:14px">
         یکی از موارد زیر را انتخاب کنید:
       </p>
       <div id="templateList">
@@ -699,7 +758,7 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
     <div class="card">
       <div class="card-title">
         <div class="icon">🤖</div>موتور اتوماسیون
-        <span style="margin-right:auto;font-size:10px;color:var(--text2)" id="autoCounter">۰</span>
+        <span class="counter" id="autoCounter">۰</span>
       </div>
       <button class="btn btn-primary btn-block" onclick="openAutoModal()">➕ اتوماسیون جدید</button>
     </div>
@@ -751,11 +810,11 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
       </div>
       <div id="autoHystFields" style="display:none">
         <div class="step-grid">
-          <div class="form-group" style="margin:0">
+          <div class="form-group m0">
             <label class="form-label">سنسور:</label>
             <select id="autoHystSensor"></select>
           </div>
-          <div class="form-group" style="margin:0">
+          <div class="form-group m0">
             <label class="form-label">رله:</label>
             <select id="autoHystRelay">
               <option value="0">رله ۱</option><option value="1">رله ۲</option>
@@ -763,12 +822,12 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
             </select>
           </div>
         </div>
-        <div class="step-grid" style="margin-top:8px">
-          <div class="form-group" style="margin:0">
+        <div class="step-grid mt8">
+          <div class="form-group m0">
             <label class="form-label">آستانه روشن:</label>
             <input type="number" id="autoHystOn" value="30" step="0.1">
           </div>
-          <div class="form-group" style="margin:0">
+          <div class="form-group m0">
             <label class="form-label">آستانه خاموش:</label>
             <input type="number" id="autoHystOff" value="27" step="0.1">
           </div>
@@ -876,97 +935,22 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
   <div class="card">
     <div class="card-title">
       <div class="icon">📋</div>دکمه‌های ثبت‌شده
-      <span style="margin-right:auto;font-size:10px;color:var(--text2)" id="rfCounter">0</span>
+      <span class="counter" id="rfCounter">0</span>
     </div>
     <div id="rfList">
       <div class="empty"><span class="empty-icon">📡</span><p>هیچ دکمه‌ای ثبت نشده</p></div>
     </div>
   </div>
-</div>
-
-<!-- ══════════════ PAGE 4: سناریو ══════════════ -->
-<div class="page" id="p4">
-  <div class="card">
-    <div class="card-title">
-      <div class="icon">🎬</div>سناریوها
-      <span style="margin-right:auto;font-size:10px;color:var(--text2)" id="sceneCounter">۰</span>
-    </div>
-    <button class="btn btn-primary btn-block" onclick="openSceneModal()">➕ سناریو جدید</button>
-  </div>
-  <div id="sceneList">
-    <div class="empty"><span class="empty-icon">🎬</span><p>سناریویی تعریف نشده</p></div>
-  </div>
-
-  <div class="modal-overlay" id="sceneModal">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-title">🎬 سناریو جدید</div>
-      <div class="form-group">
-        <label class="form-label">نام سناریو:</label>
-        <input type="text" id="sceneName" placeholder="مثال: آبیاری باغچه">
-      </div>
-      <div class="checkbox-row">
-        <input type="checkbox" id="sceneSeq" style="width:18px;height:18px">
-        <label for="sceneSeq">اجرای مرحله‌ای</label>
-      </div>
-      <div class="checkbox-row" style="margin-top:8px">
-        <input type="checkbox" id="sceneTimeEnabled" style="width:18px;height:18px"
-          onchange="document.getElementById('sceneTimePicker').style.display=this.checked?'block':'none'">
-        <label for="sceneTimeEnabled">⏰ اجرای خودکار در ساعت مشخص</label>
-      </div>
-      <div id="sceneTimePicker" style="display:none;margin-top:8px">
-        <div class="step-grid">
-          <div class="form-group" style="margin:0">
-            <label class="form-label">ساعت (0-23):</label>
-            <input type="number" id="sceneTriggerHour" min="0" max="23" value="0">
-          </div>
-          <div class="form-group" style="margin:0">
-            <label class="form-label">دقیقه (0-59):</label>
-            <input type="number" id="sceneTriggerMinute" min="0" max="59" value="0">
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:10px">
-          <label class="form-label">روزهای هفته:</label>
-          <div id="weekdayPicker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="0" checked style="width:16px;height:16px;accent-color:var(--primary)">ی</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="1" checked style="width:16px;height:16px;accent-color:var(--primary)">د</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="2" checked style="width:16px;height:16px;accent-color:var(--primary)">س</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="3" checked style="width:16px;height:16px;accent-color:var(--primary)">چ</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="4" checked style="width:16px;height:16px;accent-color:var(--primary)">پ</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="5" checked style="width:16px;height:16px;accent-color:var(--primary)">ج</label>
-            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" class="wday" value="6" checked style="width:16px;height:16px;accent-color:var(--primary)">ش</label>
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label class="form-label">🔁 تکرار هر چند دقیقه (0=یک‌بار در روز):</label>
-          <input type="number" id="sceneRepeatInterval" min="0" max="10080" value="0">
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="section-title">مراحل اجرا</div>
-      <div id="stepList"></div>
-      <button class="btn btn-ghost btn-block" onclick="addStep()" style="margin-bottom:12px">➕ افزودن مرحله</button>
-      <div class="btn-row">
-        <button class="btn btn-success" onclick="saveScene()">💾 ذخیره</button>
-        <button class="btn btn-ghost" onclick="closeModal('sceneModal')">❌ لغو</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════ PAGE 5: ترکیب RF ══════════════ -->
-<div class="page" id="p5">
   <div class="card">
     <div class="card-title"><div class="icon">🔗</div>ترکیب دکمه‌ها</div>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:12px">
+    <p class="fs11 c2" style="margin-bottom:12px">
       دو دکمه که در عرض ۸۰۰ms فشرده شوند، یک عملکرد مشترک انجام می‌دهند.
     </p>
     <button class="btn btn-primary btn-block" onclick="openComboModal()">➕ ترکیب جدید</button>
+    <div id="comboList" style="margin-top:10px">
+      <div class="empty"><span class="empty-icon">🔗</span><p>ترکیبی تعریف نشده</p></div>
+    </div>
   </div>
-  <div id="comboList">
-    <div class="empty"><span class="empty-icon">🔗</span><p>ترکیبی تعریف نشده</p></div>
-  </div>
-
   <div class="modal-overlay" id="comboModal">
     <div class="modal">
       <div class="modal-handle"></div>
@@ -1005,6 +989,76 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
   </div>
 </div>
 
+<!-- ══════════════ PAGE 4: سناریو ══════════════ -->
+<div class="page" id="p4">
+  <div class="card">
+    <div class="card-title">
+      <div class="icon">🎬</div>سناریوها
+      <span class="counter" id="sceneCounter">۰</span>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="openSceneModal()">➕ سناریو جدید</button>
+  </div>
+  <div id="sceneList">
+    <div class="empty"><span class="empty-icon">🎬</span><p>سناریویی تعریف نشده</p></div>
+  </div>
+
+  <div class="modal-overlay" id="sceneModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">🎬 سناریو جدید</div>
+      <div class="form-group">
+        <label class="form-label">نام سناریو:</label>
+        <input type="text" id="sceneName" placeholder="مثال: آبیاری باغچه">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="sceneSeq" style="width:18px;height:18px">
+        <label for="sceneSeq">اجرای مرحله‌ای</label>
+      </div>
+      <div class="checkbox-row mt8">
+        <input type="checkbox" id="sceneTimeEnabled" style="width:18px;height:18px"
+          onchange="document.getElementById('sceneTimePicker').style.display=this.checked?'block':'none'">
+        <label for="sceneTimeEnabled">⏰ اجرای خودکار در ساعت مشخص</label>
+      </div>
+      <div id="sceneTimePicker" style="display:none;margin-top:8px">
+        <div class="step-grid">
+          <div class="form-group m0">
+            <label class="form-label">ساعت (0-23):</label>
+            <input type="number" id="sceneTriggerHour" min="0" max="23" value="0">
+          </div>
+          <div class="form-group m0">
+            <label class="form-label">دقیقه (0-59):</label>
+            <input type="number" id="sceneTriggerMinute" min="0" max="59" value="0">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">روزهای هفته:</label>
+          <div id="weekdayPicker" class="weekday-picker">
+            <label><input type="checkbox" class="wday" value="0" checked>ی</label>
+            <label><input type="checkbox" class="wday" value="1" checked>د</label>
+            <label><input type="checkbox" class="wday" value="2" checked>س</label>
+            <label><input type="checkbox" class="wday" value="3" checked>چ</label>
+            <label><input type="checkbox" class="wday" value="4" checked>پ</label>
+            <label><input type="checkbox" class="wday" value="5" checked>ج</label>
+            <label><input type="checkbox" class="wday" value="6" checked>ش</label>
+          </div>
+        </div>
+        <div class="form-group mt8">
+          <label class="form-label">🔁 تکرار هر چند دقیقه (0=یک‌بار در روز):</label>
+          <input type="number" id="sceneRepeatInterval" min="0" max="10080" value="0">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-title">مراحل اجرا</div>
+      <div id="stepList"></div>
+      <button class="btn btn-ghost btn-block" onclick="addStep()" style="margin-bottom:12px">➕ افزودن مرحله</button>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="saveScene()">💾 ذخیره</button>
+        <button class="btn btn-ghost" onclick="closeModal('sceneModal')">❌ لغو</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ PAGE 6: تنظیمات ══════════════ -->
 <div class="page" id="p6">
   <div class="card">
@@ -1020,13 +1074,13 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
   </div>
   <div class="card">
     <div class="card-title"><div class="icon">📱</div>شماره‌های مجاز
-      <span style="margin-right:auto;font-size:10px;color:var(--text2)" id="phoneCounter">۰</span>
+      <span class="counter" id="phoneCounter">۰</span>
     </div>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:12px">
+    <p class="fs11 c2" style="margin-bottom:12px">
       اگر لیست خالی باشد، همه شماره‌ها مجاز هستند.
     </p>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input type="text" id="newPhone" placeholder="+989123456789" style="flex:1">
+    <div class="flex gap8" style="margin-bottom:12px">
+      <input type="text" id="newPhone" placeholder="+989123456789" class="flex1">
       <button class="btn btn-primary" onclick="addPhone()">➕</button>
     </div>
     <div id="phoneList">
@@ -1035,36 +1089,29 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
   </div>
   <div class="card">
     <div class="card-title"><div class="icon">🗄️</div>مدیریت داده</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="flex-col gap8">
       <button class="btn btn-danger btn-block" onclick="clearAllData()">🗑️ پاک کردن همه تنظیمات</button>
     </div>
   </div>
   <div class="card">
     <div class="card-title">
       <div class="icon">📋</div>لاگ رویدادها
-      <span style="margin-right:auto;font-size:10px;color:var(--text2)" id="logCounter">۰</span>
+      <span class="counter" id="logCounter">۰</span>
     </div>
-    <div style="margin-bottom:12px;display:flex;gap:8px">
-      <button class="btn btn-ghost" onclick="loadLogs()" style="flex:1">🔄</button>
+    <div class="flex gap8" style="margin-bottom:12px">
+      <button class="btn btn-ghost flex1" onclick="loadLogs()">🔄</button>
       <button class="btn btn-danger" onclick="clearLogs()">🗑️</button>
     </div>
-    <div id="logList" style="max-height:400px;overflow-y:auto">
+    <div id="logList" class="flex-col" style="max-height:400px;overflow-y:auto">
       <div class="empty"><span class="empty-icon">📋</span><p>لاگی وجود ندارد</p></div>
     </div>
   </div>
   <div class="card">
     <div class="card-title"><div class="icon">ℹ️</div>اطلاعات سیستم</div>
-    <div id="sysInfo" style="font-size:11px;color:var(--text2);line-height:2"></div>
+    <div id="sysInfo" class="fs11 c2" style="line-height:2"></div>
   </div>
-</div>
-
-<!-- ══════════════ PAGE 7: WiFi / OTA ══════════════ -->
-<div class="page" id="p7">
   <div class="card">
-    <div class="card-title"><div class="icon">📶</div>اتصال به WiFi</div>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:12px">
-      پس از اتصال، بروزرسانی خودکار بررسی می‌شود.
-    </p>
+    <div class="card-title"><div class="icon">📶</div>اتصال به WiFi / بروزرسانی</div>
     <div class="form-group">
       <label class="form-label">نام شبکه (SSID):</label>
       <input type="text" id="wifiSSID" placeholder="مثال: HomeWifi">
@@ -1083,29 +1130,23 @@ input[type=checkbox]{width:auto;width:18px;height:18px;
 <!-- ══════════════ BOTTOM NAV ══════════════ -->
 <nav class="bottom-nav">
   <div class="nav-indicator" id="navIndicator"></div>
-  <button class="nav-btn active" id="nb0" onclick="showPage(0)">
-    <span class="icon">🏠</span>خانه
+  <button class="nav-btn active" id="nb0" onclick="showPage(0)" title="خانه">
+    <span class="icon">🏠</span>
   </button>
-  <button class="nav-btn" id="nb1" onclick="showPage(1)">
-    <span class="icon">🌡️</span>سنسور
+  <button class="nav-btn" id="nb1" onclick="showPage(1)" title="سنسور">
+    <span class="icon">🌡️</span>
   </button>
-  <button class="nav-btn" id="nb2" onclick="showPage(2)">
-    <span class="icon">🤖</span>اتوماسیون
+  <button class="nav-btn" id="nb2" onclick="showPage(2)" title="اتوماسیون">
+    <span class="icon">🤖</span>
   </button>
-  <button class="nav-btn" id="nb3" onclick="showPage(3)">
-    <span class="icon">📡</span>ریموت
+  <button class="nav-btn" id="nb3" onclick="showPage(3)" title="ریموت">
+    <span class="icon">📡</span>
   </button>
-  <button class="nav-btn" id="nb4" onclick="showPage(4)">
-    <span class="icon">🎬</span>سناریو
+  <button class="nav-btn" id="nb4" onclick="showPage(4)" title="سناریو">
+    <span class="icon">🎬</span>
   </button>
-  <button class="nav-btn" id="nb5" onclick="showPage(5)">
-    <span class="icon">🔗</span>ترکیب
-  </button>
-  <button class="nav-btn" id="nb6" onclick="showPage(6)">
-    <span class="icon">⚙️</span>تنظیمات
-  </button>
-  <button class="nav-btn" id="nb7" onclick="showPage(7)">
-    <span class="icon">📶</span>WiFi
+  <button class="nav-btn" id="nb5" onclick="showPage(6)" title="تنظیمات">
+    <span class="icon">⚙️</span>
   </button>
 </nav>
 
@@ -1131,41 +1172,47 @@ const S = {
 const relayNames = ['رله ۱','رله ۲','رله ۳','رله ۴'];
 const actionLabels = ['—','سناریو','Toggle','روشن','خاموش','همه خاموش'];
 
-// ── پروفایل سنسورها ──────────────────────────────────────────────
+// ── پروفایل سنسورها (با امضای نوع خودکار) ────────────────────────
 const SENSOR_PROFILES = [
   {
     id:'temp', icon:'🌡️', name:'دما', desc:'سنسور دما (°C)',
-    valueType:1, valueBits:8, scale:1.0, offset:0,
+    sensorTypeId:1, valueBits:8, scale:1.0, offset:0,
     unit:'°C', baseMask:0xFFFF00,
     hint:'مثال: DHT11, DS18B20'
   },
   {
     id:'humidity', icon:'💦', name:'رطوبت هوا', desc:'رطوبت محیط (%)',
-    valueType:2, valueBits:8, scale:1.0, offset:0,
+    sensorTypeId:2, valueBits:8, scale:1.0, offset:0,
     unit:'%RH', baseMask:0xFFFF00,
-    hint:'مثال: DHT11'
+    hint:'مثال: DHT11 / DHT22'
   },
   {
     id:'soilmoist', icon:'🌱', name:'رطوبت خاک', desc:'خشکی/مرطوبی خاک (%)',
-    valueType:0, valueBits:8, scale:1.0, offset:0,
+    sensorTypeId:0, valueBits:8, scale:1.0, offset:0,
     unit:'%', baseMask:0xFFFF00,
     hint:'سنسور capacitive یا resistive'
   },
   {
     id:'level', icon:'🪣', name:'سطح مایع', desc:'ارتفاع مایع (cm)',
-    valueType:3, valueBits:8, scale:1.0, offset:0,
+    sensorTypeId:3, valueBits:8, scale:1.0, offset:0,
     unit:'cm', baseMask:0xFFFF00,
     hint:'سنسور اولتراسونیک یا float'
   },
   {
     id:'door', icon:'🚪', name:'در / پنجره', desc:'باز یا بسته',
-    valueType:5, valueBits:1, scale:1.0, offset:0,
-    unit:'', baseMask:0xFFFFFE,
+    sensorTypeId:5, valueBits:1, scale:1.0, offset:0,
+    unit:'bool', baseMask:0xFFFFFE,
     hint:'مگنت یا میکروسوییچ'
   },
   {
+    id:'motion', icon:'👤', name:'تشخیص حرکت', desc:'حرکت / عدم حرکت',
+    sensorTypeId:6, valueBits:1, scale:1.0, offset:0,
+    unit:'bool', baseMask:0xFFFFFE,
+    hint:'PIR یا رادار microwave'
+  },
+  {
     id:'voltage', icon:'⚡', name:'ولتاژ', desc:'سطح ولتاژ (V)',
-    valueType:4, valueBits:8, scale:0.1, offset:0,
+    sensorTypeId:4, valueBits:8, scale:0.1, offset:0,
     unit:'V', baseMask:0xFFFF00,
     hint:'ولتاژ باتری یا شبکه'
   }
@@ -1218,23 +1265,24 @@ async function api(url,method='GET',body=null){
 //  NAVIGATION
 // ══════════════════════════════════════════════
 window.showPage=function(n){
-  for(let i=0;i<8;i++){
-    document.getElementById('p'+i)?.classList.remove('active');
+  // nb5 → page 6 (settings); pages p5 removed
+  const navMap=[0,1,2,3,4,6];
+  for(let i=0;i<navMap.length;i++){
     document.getElementById('nb'+i)?.classList.remove('active');
+    document.getElementById('p'+navMap[i])?.classList.remove('active');
   }
+  const navIdx=navMap.indexOf(n);
+  document.getElementById('nb'+navIdx)?.classList.add('active');
   document.getElementById('p'+n)?.classList.add('active');
-  document.getElementById('nb'+n)?.classList.add('active');
   S.currentPage=n;
-  const w=100/8;
-  document.getElementById('navIndicator').style.cssText=`width:${w}%;right:${n*w}%;`;
+  const w=100/navMap.length;
+  document.getElementById('navIndicator').style.cssText=`width:${w}%;right:${navIdx*w}%;`;
   if(n===0)doRefresh();
   if(n===1){buildProfileGrid();loadSensorsPage();}
   if(n===2)loadAutomations();
   if(n===3)loadRF();
   if(n===4)loadScenes();
-  if(n===5)loadCombos();
   if(n===6)loadSettings();
-  if(n===7){}
 };
 
 // ══════════════════════════════════════════════
@@ -1292,23 +1340,24 @@ async function doRefresh(){
       const activeSensors=sensors.filter(s=>s.hasValue);
       if(activeSensors.length>0){
         document.getElementById('sensorDashCard').style.display='block';
-        const profMap={0:'%',1:'°C',2:'%RH',3:'cm',4:'V',5:''};
-        const iconMap={0:'💧',1:'🌡️',2:'💦',3:'🪣',4:'⚡',5:'📡'};
+        const profMap={0:'%',1:'°C',2:'%RH',3:'cm',4:'V',5:'',6:'',7:''};
+        const iconMap={0:'💧',1:'🌡️',2:'💦',3:'🪣',4:'⚡',5:'🚪',6:'👤',7:'📡'};
         let sh='';
         for(const s of activeSensors){
           const isOld=s.ageS>300;
-          const valStr=s.valueType===5?(s.lastValue>0.5?'باز':'بسته')
-            :(s.lastValue.toFixed(s.valueType===1||s.valueType===4?1:0));
+          const sid=s.sensorTypeId||0;
+          const valStr=sid===5?(s.lastValue>0.5?'باز':'بسته')
+            :(s.lastValue.toFixed(sid===1||sid===4?1:0));
           const ageStr=s.ageS<60?s.ageS+'s':Math.floor(s.ageS/60)+'m';
           sh+=`<div class="sensor-card">
-            <div class="sensor-icon-wrap ${isOld?'offline':'online'}">${iconMap[s.valueType]||'📡'}</div>
+            <div class="sensor-icon-wrap ${isOld?'offline':'online'}">${iconMap[sid]||'📡'}</div>
             <div style="flex:1">
               <div class="sensor-name-lbl">${s.name}</div>
               <div class="sensor-age">${isOld?'⚠️ آفلاین':'آخرین: '+ageStr+' پیش'}</div>
             </div>
             <div style="text-align:left">
               <div class="sensor-val">${valStr}</div>
-              <div class="sensor-unit">${profMap[s.valueType]||''}</div>
+              <div class="sensor-unit">${profMap[sid]||''}</div>
             </div>
           </div>`;
         }
@@ -1446,7 +1495,9 @@ async function sSaveSimple(){
   if(!p||!d){toast('ابتدا سنسور را یاد بدهید','warning');return;}
   const name=document.getElementById('sSimpleName').value.trim()||(p.name+' جدید');
   const payload={
-    id:-1, name, valueType:p.valueType,
+    id:-1, name,
+    sensorTypeId:p.sensorTypeId,
+    valueType:p.sensorTypeId,
     baseCode:d.baseCode||0, baseMask:d.baseMask||p.baseMask,
     valueBits:p.valueBits, scale:p.scale, offset:p.offset,
     protocol:d.protocol||1, bitLength:d.bitLength||24
@@ -1499,10 +1550,12 @@ function sLearnReset(){
 }
 async function sLearnSave(){
   const d=window._sLearnData||{};
+  const vt=parseInt(document.getElementById('sNewType').value);
   const payload={
     id:-1,
     name:document.getElementById('sNewName').value.trim()||'سنسور',
-    valueType:parseInt(document.getElementById('sNewType').value),
+    sensorTypeId:vt,
+    valueType:vt,
     baseCode:d.baseCode||0, baseMask:d.baseMask||0xFFFFFF,
     valueBits:parseInt(document.getElementById('sNewValueBits').value)||8,
     scale:parseFloat(document.getElementById('sNewScale').value)||1.0,
@@ -1520,9 +1573,9 @@ async function loadSensorsPage(){
   const sensors=await api('/api/sensors');
   document.getElementById('sensorCounter').textContent=sensors.length+' سنسور';
 
-  const typeLabels=['درصد','دما','رطوبت','فاصله','ولتاژ','خام'];
-  const icons={0:'💧',1:'🌡️',2:'💦',3:'🪣',4:'⚡',5:'📡'};
-  const units={0:'%',1:'°C',2:'%RH',3:'cm',4:'V',5:''};
+  const typeLabels=['درصد','دما','رطوبت','فاصله','ولتاژ','در/پنجره','حرکت','خام'];
+  const icons={0:'💧',1:'🌡️',2:'💦',3:'🪣',4:'⚡',5:'🚪',6:'👤',7:'📡'};
+  const units={0:'%',1:'°C',2:'%RH',3:'cm',4:'V',5:'',6:'',7:''};
 
   if(!sensors.length){
     const emptyHtml='<div class="empty"><span class="empty-icon">🌡️</span><p>هنوز سنسوری ثبت نشده</p></div>';
@@ -1535,12 +1588,12 @@ async function loadSensorsPage(){
   let hSimple='';
   for(const s of sensors){
     const ageOk=s.hasValue&&s.ageS<300;
-    const isDoor=s.valueType===5;
+    const isDoor=s.sensorTypeId===5;
     const valStr=isDoor?(s.lastValue>0.5?'🔓 باز':'🔒 بسته')
-      :(s.hasValue?(s.lastValue.toFixed(1)+' '+(units[s.valueType]||'')):'— دریافت نشده');
+      :(s.hasValue?(s.lastValue.toFixed(1)+' '+(units[s.sensorTypeId]||'')):'— دریافت نشده');
     const ageStr=s.hasValue?(s.ageS<60?s.ageS+'s':Math.floor(s.ageS/60)+'m پیش'):'هرگز';
     hSimple+=`<div class="sensor-card">
-      <div class="sensor-icon-wrap ${ageOk?'online':'offline'}">${icons[s.valueType]||'📡'}</div>
+      <div class="sensor-icon-wrap ${ageOk?'online':'offline'}">${icons[s.sensorTypeId]||'📡'}</div>
       <div style="flex:1">
         <div class="sensor-name-lbl">${s.name}</div>
         <div class="sensor-age">${ageOk?('آخرین: '+ageStr):(!s.hasValue?'هنوز دریافت نشده':'⚠️ آفلاین')}</div>
@@ -1560,13 +1613,13 @@ async function loadSensorsPage(){
   let hAdv='';
   for(const s of sensors){
     const ageOk=s.hasValue&&s.ageS<300;
-    const valStr=s.hasValue?s.lastValue.toFixed(1)+(units[s.valueType]||''):'—';
+    const valStr=s.hasValue?s.lastValue.toFixed(1)+(units[s.sensorTypeId]||''):'—';
     hAdv+=`<div class="list-item">
       <div class="item-icon" style="background:${ageOk?'var(--success)':'var(--border)'}">
-        ${icons[s.valueType]||'📡'}
+        ${icons[s.sensorTypeId]||'📡'}
       </div>
       <div class="item-body">
-        <div class="item-title">${s.name} <span class="tag tag-relay">${typeLabels[s.valueType]||'خام'}</span></div>
+        <div class="item-title">${s.name} <span class="tag tag-relay">${typeLabels[s.sensorTypeId]||'خام'}</span></div>
         <div class="item-sub">
           مقدار: <b>${valStr}</b>
           ${s.hasValue?' | '+(s.ageS<60?s.ageS+'s':Math.floor(s.ageS/60)+'m')+' پیش':' | هنوز دریافت نشده'}
@@ -1589,7 +1642,7 @@ function sOpenEdit(id){
     if(!s)return;
     document.getElementById('sEditId').value=id;
     document.getElementById('sEditName').value=s.name;
-    document.getElementById('sEditType').value=s.valueType;
+    document.getElementById('sEditType').value=s.sensorTypeId;
     document.getElementById('sEditValueBits').value=s.valueBits;
     document.getElementById('sEditScale').value=s.scale;
     document.getElementById('sEditOffset').value=s.offset;
@@ -1604,6 +1657,7 @@ async function sEditSave(){
   const payload=Object.assign({},s,{
     id,
     name:document.getElementById('sEditName').value.trim()||s.name,
+    sensorTypeId:parseInt(document.getElementById('sEditType').value),
     valueType:parseInt(document.getElementById('sEditType').value),
     valueBits:parseInt(document.getElementById('sEditValueBits').value),
     scale:parseFloat(document.getElementById('sEditScale').value),
@@ -1637,10 +1691,10 @@ async function openTemplate(type){
   S.currentTemplate=type;
   const sensors=await api('/api/sensors');
   const relayOpts='<option value="0">رله ۱</option><option value="1">رله ۲</option><option value="2">رله ۳</option><option value="3">رله ۴</option>';
-  const tempSensors=sensors.filter(s=>s.valueType===1);
-  const soilSensors=sensors.filter(s=>s.valueType===0);
-  const levelSensors=sensors.filter(s=>s.valueType===3);
-  const doorSensors=sensors.filter(s=>s.valueType===5);
+  const tempSensors=sensors.filter(s=>s.sensorTypeId===1);
+  const soilSensors=sensors.filter(s=>s.sensorTypeId===0);
+  const levelSensors=sensors.filter(s=>s.sensorTypeId===3);
+  const doorSensors=sensors.filter(s=>s.sensorTypeId===5);
 
   const sOpts=(arr,label)=>{
     if(!arr.length)return `<option value="-1">— ${label} ثبت نشده —</option>`;
@@ -1691,7 +1745,7 @@ async function openTemplate(type){
         <div class="wizard-num">۱</div>
         <div class="wizard-q">کدام سنسور دما؟</div>
         <select id="tmpl_sensor">${sOpts(tempSensors,'سنسور دما')}</select>
-        ${!tempSensors.length?'<p style="font-size:10px;color:var(--warning);margin-top:6px">⚠️ ابتدا یک سنسور دما ثبت کنید</p>':''}
+        ${!tempSensors.length?'<p class="fs10 c-warn" style="margin-top:6px">⚠️ ابتدا یک سنسور دما ثبت کنید</p>':''}
       </div>
       <div class="wizard-step">
         <div class="wizard-num">۲</div>
@@ -1718,7 +1772,7 @@ async function openTemplate(type){
         <div class="wizard-num">۱</div>
         <div class="wizard-q">کدام سنسور رطوبت خاک؟</div>
         <select id="tmpl_sensor">${sOpts(soilSensors,'سنسور رطوبت خاک')}</select>
-        ${!soilSensors.length?'<p style="font-size:10px;color:var(--warning);margin-top:6px">⚠️ ابتدا یک سنسور رطوبت خاک ثبت کنید</p>':''}
+        ${!soilSensors.length?'<p class="fs10 c-warn" style="margin-top:6px">⚠️ ابتدا یک سنسور رطوبت خاک ثبت کنید</p>':''}
       </div>
       <div class="wizard-step">
         <div class="wizard-num">۲</div>
@@ -1773,7 +1827,7 @@ async function openTemplate(type){
         <div class="wizard-num">۱</div>
         <div class="wizard-q">کدام سنسور در/پنجره؟</div>
         <select id="tmpl_sensor">${sOpts(doorSensors,'سنسور در')}</select>
-        ${!doorSensors.length?'<p style="font-size:10px;color:var(--warning);margin-top:6px">⚠️ ابتدا یک سنسور در/پنجره ثبت کنید</p>':''}
+        ${!doorSensors.length?'<p class="fs10 c-warn" style="margin-top:6px">⚠️ ابتدا یک سنسور در/پنجره ثبت کنید</p>':''}
       </div>
       <div class="wizard-step">
         <div class="wizard-num">۲</div>
@@ -2048,7 +2102,7 @@ function addAutoCond(data=null){
   const sOpts=autoSensors.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   const h=`<div class="step-card" id="autoCond${id}">
     <div class="step-num">${id+1}</div>
-    <div class="form-group" style="margin-top:8px">
+    <div class="form-group mt8">
       <label class="form-label">نوع شرط:</label>
       <select id="aCondType${id}" onchange="updateCondUI(${id})">
         <option value="0">همیشه</option>
@@ -2067,11 +2121,12 @@ function addAutoCond(data=null){
       <select id="aCondRelayId${id}"><option value="0">رله ۱</option><option value="1">رله ۲</option><option value="2">رله ۳</option><option value="3">رله ۴</option></select>
     </div>
     <div id="aCondSensor${id}" style="display:none">
-      <select id="aCondSensorId${id}">${sOpts||'<option>—</option>'}</select>
+      <select id="aCondSensorId${id}" multiple style="height:100px">${sOpts||'<option>—</option>'}</select>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">Ctrl+click برای انتخاب چند سنسور</div>
     </div>
     <div id="aCondThresh${id}" style="display:none">
       <div class="step-grid" style="margin-top:6px">
-        <div class="form-group" style="margin:0"><label class="form-label">مقدار ۱:</label>
+        <div class="form-group m0"><label class="form-label">مقدار ۱:</label>
           <input type="number" id="aCondT1_${id}" value="${data?data.thresh1:30}" step="0.1"></div>
         <div class="form-group" id="aCondT2G${id}" style="display:none;margin:0"><label class="form-label">مقدار ۲:</label>
           <input type="number" id="aCondT2_${id}" value="${data?data.thresh2:100}" step="0.1"></div>
@@ -2079,9 +2134,9 @@ function addAutoCond(data=null){
     </div>
     <div id="aCondTime${id}" style="display:none">
       <div class="step-grid" style="margin-top:6px">
-        <div class="form-group" style="margin:0"><label class="form-label">از ساعت:</label>
+        <div class="form-group m0"><label class="form-label">از ساعت:</label>
           <input type="time" id="aCondTimeS${id}" value="${data?String(data.hourStart).padStart(2,'0')+':'+String(data.minuteStart).padStart(2,'0'):'08:00'}"></div>
-        <div class="form-group" style="margin:0"><label class="form-label">تا ساعت:</label>
+        <div class="form-group m0"><label class="form-label">تا ساعت:</label>
           <input type="time" id="aCondTimeE${id}" value="${data?String(data.hourEnd).padStart(2,'0')+':'+String(data.minuteEnd).padStart(2,'0'):'18:00'}"></div>
       </div>
     </div>
@@ -2099,7 +2154,7 @@ function addAutoCond(data=null){
       <div class="form-group" style="margin-top:6px"><label class="form-label">آفلاین بیشتر از (دقیقه):</label>
         <input type="number" id="aCondOffMin${id}" value="${data?data.offlineMinutes:10}" min="1"></div>
     </div>
-    <div class="checkbox-row" style="margin-top:8px">
+    <div class="checkbox-row mt8">
       <input type="checkbox" id="aCondNot${id}" style="width:16px;height:16px" ${data&&data.negate?'checked':''}>
       <label for="aCondNot${id}" style="font-size:11px">NOT — معکوس این شرط</label>
     </div>
@@ -2109,7 +2164,18 @@ function addAutoCond(data=null){
   if(data){
     document.getElementById('aCondType'+id).value=data.type;
     if(data.relayId!==undefined)document.getElementById('aCondRelayId'+id).value=data.relayId;
-    if(data.sensorId!==undefined)document.getElementById('aCondSensorId'+id).value=data.sensorId;
+    // Pre-select multi-sensors from data.sensorIds[]
+    if(data.sensorIds&&data.sensorIds.length>0){
+      const msel=document.getElementById('aCondSensorId'+id);
+      if(msel&&msel.options){
+        for(let ii=0;ii<msel.options.length;ii++){
+          const optVal=parseInt(msel.options[ii].value);
+          msel.options[ii].selected=data.sensorIds.some(sid=>sid===optVal);
+        }
+      }
+    } else if(data.sensorId!==undefined&&data.sensorId!==-1){
+      document.getElementById('aCondSensorId'+id).value=data.sensorId;
+    }
   }
   updateCondUI(id);
 }
@@ -2132,7 +2198,7 @@ function addAutoAct(data=null){
   const sOpts=autoScenes.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   const h=`<div class="step-card" id="autoAct${id}">
     <div class="step-num">${id+1}</div>
-    <div class="form-group" style="margin-top:8px">
+    <div class="form-group mt8">
       <label class="form-label">نوع عمل:</label>
       <select id="aActType${id}" onchange="updateActUI(${id})">
         <option value="1">روشن کردن رله</option>
@@ -2146,7 +2212,7 @@ function addAutoAct(data=null){
       </select>
     </div>
     <div id="aActTarget${id}">
-      <div class="form-group" style="margin:0"><label class="form-label">هدف:</label>
+      <div class="form-group m0"><label class="form-label">هدف:</label>
         <select id="aActTargetSel${id}">
           <option value="0">رله ۱</option><option value="1">رله ۲</option>
           <option value="2">رله ۳</option><option value="3">رله ۴</option>
@@ -2162,9 +2228,9 @@ function addAutoAct(data=null){
     </div>
     <div id="aActPulse${id}" style="display:none">
       <div class="step-grid" style="margin-top:6px">
-        <div class="form-group" style="margin:0"><label class="form-label">ON (ms):</label>
+        <div class="form-group m0"><label class="form-label">ON (ms):</label>
           <input type="number" id="aActPON${id}" value="${data?data.pulseOnMs:500}" min="100"></div>
-        <div class="form-group" style="margin:0"><label class="form-label">OFF (ms):</label>
+        <div class="form-group m0"><label class="form-label">OFF (ms):</label>
           <input type="number" id="aActPOFF${id}" value="${data?data.pulseOffMs:500}" min="100"></div>
       </div>
       <div class="form-group" style="margin-top:6px"><label class="form-label">تعداد سیکل:</label>
@@ -2210,6 +2276,8 @@ async function saveAutomation(){
     conditions.push({
       type,relayId:parseInt(document.getElementById('aCondRelayId'+i)?.value||0),
       sensorId:parseInt(document.getElementById('aCondSensorId'+i)?.value||0),
+      // Multi-sensor: read all selected sensors from this multi-select
+      sensorIds:Array.from(document.getElementById('aCondSensorId'+i)?.selectedOptions||[]).map(o=>parseInt(o.value)),
       thresh1:parseFloat(document.getElementById('aCondT1_'+i)?.value||0),
       thresh2:parseFloat(document.getElementById('aCondT2_'+i)?.value||100),
       hourStart:parseInt(timeS[0]),minuteStart:parseInt(timeS[1]),
@@ -2374,6 +2442,7 @@ async function loadRF(){
     </div>`;
   }
   document.getElementById('rfList').innerHTML=h;
+  loadCombos();
 }
 async function delRF(code){
   showConfirm('دکمه حذف شود؟','حذف',async()=>{
@@ -2400,15 +2469,15 @@ function addStep(){
   const h=`<div class="step-card" id="step${id}">
     <div class="step-num">${id+1}</div>
     <div class="step-grid">
-      <div class="form-group" style="margin:0"><label class="form-label">رله:</label>
+      <div class="form-group m0"><label class="form-label">رله:</label>
         <select id="sr${id}"><option value="0">رله ۱</option><option value="1">رله ۲</option><option value="2">رله ۳</option><option value="3">رله ۴</option></select></div>
-      <div class="form-group" style="margin:0"><label class="form-label">عملکرد:</label>
+      <div class="form-group m0"><label class="form-label">عملکرد:</label>
         <select id="sa${id}"><option value="0">—</option><option value="1">خاموش</option><option value="2">روشن</option><option value="3">روشن زماندار</option></select></div>
     </div>
     <div class="step-grid">
-      <div class="form-group" style="margin:0"><label class="form-label">مدت (ثانیه):</label>
+      <div class="form-group m0"><label class="form-label">مدت (ثانیه):</label>
         <input type="number" id="sd${id}" value="0" min="0"></div>
-      <div class="form-group" style="margin:0"><label class="form-label">تأخیر قبل (ثانیه):</label>
+      <div class="form-group m0"><label class="form-label">تأخیر قبل (ثانیه):</label>
         <input type="number" id="sdelay${id}" value="0" min="0"></div>
     </div>
     ${id>0?`<button class="btn btn-danger btn-sm" onclick="document.getElementById('step${id}').remove()" style="margin-top:6px;width:100%">🗑️ حذف</button>`:''}
@@ -2600,39 +2669,7 @@ async function toggleRelayNotify(i){
     toast(relayNames[i]+(isOn?' SMS فعال':' SMS غیرفعال'),'info');
   }catch(e){el.classList.toggle('on',!isOn);}
 }
-async function loadPhones(){
-  const phones=await api('/api/phones');
-  document.getElementById('phoneCounter').textContent=phones.length+' شماره';
-  if(!phones.length){
-    document.getElementById('phoneList').innerHTML='<div class="empty"><span class="empty-icon">📱</span><p>همه شماره‌ها مجاز</p></div>';
-    return;
-  }
-  let h='';
-  phones.forEach((p,i)=>{
-    h+=`<div class="list-item">
-      <div class="item-icon">📱</div>
-      <div class="item-body"><div class="item-title" style="font-family:monospace">${p}</div></div>
-      <div class="item-actions">
-        <button class="btn btn-danger btn-sm" onclick="delPhone(${i})">🗑️</button>
-      </div>
-    </div>`;
-  });
-  document.getElementById('phoneList').innerHTML=h;
-}
-async function addPhone(){
-  const num=document.getElementById('newPhone').value.trim();
-  if(!num){toast('شماره را وارد کنید','warning');return;}
-  if(num.length<8){toast('شماره نامعتبر','error');return;}
-  await api('/api/phones/save','POST',{number:num});
-  document.getElementById('newPhone').value='';
-  toast('شماره اضافه شد ✓');loadPhones();
-}
-async function delPhone(idx){
-  showConfirm('این شماره حذف شود؟','حذف',async()=>{
-    await api('/api/phones/delete','POST',{index:idx});
-    toast('حذف شد','info');loadPhones();
-  });
-}
+// loadPhones, addPhone, deletePhone → see bottom of file
 async function loadLogs(){
   const logs=await api('/api/logs');
   document.getElementById('logCounter').textContent=logs.length+' رویداد';
@@ -2763,7 +2800,7 @@ updateClock();
 //  INIT
 // ══════════════════════════════════════════════
 setTimeout(()=>{
-  const w=100/8;
+  const w=100/6;
   document.getElementById('navIndicator').style.cssText=`width:${w}%;right:0%;`;
   buildProfileGrid();
 },100);

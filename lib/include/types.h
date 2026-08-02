@@ -3,6 +3,10 @@
 
 #include <Arduino.h>
 
+#define MAX_CONDITIONS 8
+#define MAX_ACTIONS 8
+#define MAX_SENSORS_PER_COND 4  // یک شرط می‌تونه چند سنسور رو چک کنه
+
 // ══════════════════════════════════════════════════════════════════
 // Enums
 // ══════════════════════════════════════════════════════════════════
@@ -70,6 +74,19 @@ enum ClockSyncState
 {
     CSYNC_IDLE = 0,
     CSYNC_SENT = 1
+};
+
+// ─── Sensor Type Identifiers (4-bit tag packed in baseMask upper nibble) ───
+enum SensorTypeId : uint8_t
+{
+    SID_PERCENT  = 0,  // 💧 percent (soil moisture, level %)
+    SID_TEMP     = 1,  // 🌡️ temperature (°C)
+    SID_HUMIDITY = 2,  // 💦 humidity (%RH)
+    SID_DISTANCE = 3,  // 🪣 distance/level (cm)
+    SID_VOLTAGE  = 4,  // ⚡ voltage (V)
+    SID_DOOR     = 5,  // 🚪 door/window (bool)
+    SID_MOTION   = 6,  // 👤 motion/presence (bool)
+    SID_CUSTOM   = 7   // 🔧 generic
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -206,7 +223,9 @@ struct AutoCondition
 {
     uint8_t type; // ConditionType
     uint8_t relayId;
-    uint8_t sensorId;
+    uint8_t sensorId;                 // legacy single-sensor (backward compat)
+    uint8_t sensorIds[MAX_SENSORS_PER_COND]; // multi-sensor binding
+    uint8_t sensorIdCount;            // how many sensors bound (0 = use legacy sensorId)
     float thresh1;
     float thresh2;
     uint8_t hourStart;

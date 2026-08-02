@@ -8,7 +8,7 @@
 // ---------------------------------------------------------------------------
 #define RELAY1_PIN 5
 #define RELAY2_PIN 6
-#define RELAY3_PIN 9
+#define RELAY3_PIN 20
 #define RELAY4_PIN 10
 
 #define RF_RX_PIN 4
@@ -34,7 +34,7 @@
 
 #define CURRENT_VERSION "1.0.0"
 #define DEVICE_TYPE "esp32"
-#define SERVER_IP "188.121.124.97"
+#define SERVER_IP "broker.hivemq.com"
 
 // ---------------------------------------------------------------------------
 // Timing constants (ms)
@@ -44,6 +44,7 @@
 #define RF_LONG_PRESS_TIME 1000
 #define RF_COMBO_WINDOW 500
 #define RF_SPAM_LIMIT 3
+#define RF_HISTORY_SIZE 16
 #define RF_LEARNING_TIMEOUT 20000
 #define RF_BURST_WINDOW 120UL
 
@@ -59,7 +60,7 @@
 // ---------------------------------------------------------------------------
 // WiFi Access Point
 // ---------------------------------------------------------------------------
-#define AP_SSID "SmartRelay_Pro"
+#define AP_SSID "SmartRelay_test"
 #define AP_PASS "12345678"
 
 // ---------------------------------------------------------------------------

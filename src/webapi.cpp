@@ -574,18 +574,20 @@ void handleAPISensors()
 {
     DynamicJsonDocument doc(4096);
     JsonArray arr = doc.to<JsonArray>();
-    const char *units[] = {"%", "°C", "%RH", "cm", "V", ""};
-    const char *typeNames[] = {"percent", "temp", "humidity", "distance", "voltage", "raw"};
+    const char *units[] = {"%", "°C", "%RH", "cm", "V", "bool", "bool", ""};
+    const char *typeNames[] = {"percent","temp","humidity","distance","voltage","door","motion","custom"};
 
     for (int i = 0; i < rfSensorCount; i++)
     {
         if (!rfSensors[i].active)
             continue;
-        int vt = min((int)rfSensors[i].valueType, 5);
+        uint8_t sid = getSensorTypeFromMask(rfSensors[i].baseMask);
+        int vt = min((int)sid, 7);
         JsonObject o = arr.createNestedObject();
         o["id"] = i;
         o["name"] = rfSensors[i].name;
-        o["valueType"] = rfSensors[i].valueType;
+        o["sensorTypeId"] = sid;
+        o["valueType"] = rfSensors[i].valueType; // legacy compat
         o["typeName"] = typeNames[vt];
         o["unit"] = units[vt];
         o["baseCode"] = rfSensors[i].baseCode;
@@ -655,6 +657,18 @@ void handleAPISensorSave()
         rfSensors[id].protocol = doc["protocol"];
     if (doc.containsKey("bitLength"))
         rfSensors[id].bitLength = doc["bitLength"];
+
+    // ── Auto-signature: embed SensorTypeId into upper 4 bits of baseMask ──
+    uint8_t sid = SID_CUSTOM;
+    if (doc.containsKey("sensorTypeId"))
+    {
+        sid = (uint8_t)doc["sensorTypeId"];
+    }
+    else if (doc.containsKey("valueType"))
+    {
+        sid = (uint8_t)doc["valueType"];
+    }
+    packSensorTypeIntoMask(rfSensors[id], sid);
 
     rfSensors[id].active = true;
 
@@ -754,16 +768,18 @@ void handleAPISensorValues()
 {
     DynamicJsonDocument doc(1024);
     JsonArray arr = doc.to<JsonArray>();
-    const char *units[] = {"%", "°C", "%RH", "cm", "V", ""};
+    const char *units[] = {"%", "°C", "%RH", "cm", "V", "bool", "bool", ""};
 
     for (int i = 0; i < rfSensorCount; i++)
     {
         if (!rfSensors[i].active)
             continue;
+        uint8_t sid = getSensorTypeFromMask(rfSensors[i].baseMask);
         JsonObject o = arr.createNestedObject();
         o["id"] = i;
         o["name"] = rfSensors[i].name;
-        o["unit"] = units[min((int)rfSensors[i].valueType, 5)];
+        o["sensorTypeId"] = sid;
+        o["unit"] = units[min((int)sid, 7)];
         o["hasValue"] = rfSensors[i].hasValue;
         o["value"] = rfSensors[i].hasValue ? rfSensors[i].lastValue : 0.0f;
         o["ageS"] = rfSensors[i].hasValue ? ((uint32_t)millis() - rfSensors[i].lastUpdateMs) / 1000UL : (uint32_t)9999;
@@ -809,6 +825,11 @@ void handleAPIAutomations()
             c["typeName"] = condNames[min((int)a.conditions[j].type, 9)];
             c["relayId"] = a.conditions[j].relayId;
             c["sensorId"] = a.conditions[j].sensorId;
+            // Multi-sensor binding
+            JsonArray sids = c.createNestedArray("sensorIds");
+            for (uint8_t k = 0; k < a.conditions[j].sensorIdCount && k < MAX_SENSORS_PER_COND; k++)
+                sids.add(a.conditions[j].sensorIds[k]);
+            c["sensorIdCount"] = a.conditions[j].sensorIdCount;
             c["thresh1"] = a.conditions[j].thresh1;
             c["thresh2"] = a.conditions[j].thresh2;
             c["hourStart"] = a.conditions[j].hourStart;
@@ -925,6 +946,19 @@ void handleAPIAutomationSave()
             a.conditions[j].weekdayMask = c["weekdayMask"] | (uint8_t)0x7F;
             a.conditions[j].offlineMinutes = c["offlineMinutes"] | (uint16_t)10;
             a.conditions[j].negate = c["negate"] | false;
+
+            // ── Multi-sensor binding: read sensorIds[] array ──
+            a.conditions[j].sensorIdCount = 0;
+            memset(a.conditions[j].sensorIds, 0, MAX_SENSORS_PER_COND);
+            JsonArray sids = c["sensorIds"];
+            if (sids)
+            {
+                for (uint8_t k = 0; k < MAX_SENSORS_PER_COND && k < sids.size(); k++)
+                {
+                    a.conditions[j].sensorIds[k] = sids[k] | (uint8_t)0;
+                    a.conditions[j].sensorIdCount++;
+                }
+            }
             a.conditionCount++;
         }
     }

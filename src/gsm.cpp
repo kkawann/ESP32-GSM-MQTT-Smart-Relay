@@ -427,6 +427,10 @@ unsigned long parseTime(String timeStr)
 
 String getStatus()
 {
+    // Take mutexRelay to safely read relay states
+    if (mutexRelay)
+        xSemaphoreTake(mutexRelay, pdMS_TO_TICKS(20));
+
     String s = "=STATUS=\n";
 
     for (int i = 0; i < 4; i++)
@@ -484,6 +488,10 @@ String getStatus()
         s += "\nMQTT:OK";
     else
         s += "\nMQTT:--";
+
+    // Release mutexRelay
+    if (mutexRelay)
+        xSemaphoreGive(mutexRelay);
 
     return s;
 }

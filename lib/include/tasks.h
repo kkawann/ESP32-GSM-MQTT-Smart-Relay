@@ -14,6 +14,7 @@ void cbLED(TimerHandle_t t);
 void taskWebServerFn(void *p);
 void taskGSMFn(void *p);
 void taskRFFn(void *p);
+void taskRelayFn(void *p);
 void taskSceneFn(void *p);
 void taskSaveFn(void *p);
 void taskMQTTFn(void *param);

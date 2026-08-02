@@ -84,6 +84,8 @@ void SIM800_Init(SIM800_t *sim, Stream *serial)
     sim->http_request.complete = false;
     sim->http_next_step_time = 0;
 
+    sim->clockSyncGotCCLK = false;
+
     while (serial->available())
         serial->read();
     SIM_LOGLN("[SIM] Init complete");
@@ -1013,6 +1015,7 @@ static void SIM800_HandleURC(SIM800_t *sim, const char *line)
             sim->net_minute = mm;
             sim->net_second = ss;
             sim->net_time_valid = true;
+            sim->clockSyncGotCCLK = true; // ✅ اعلام دریافت پاسخ CCLK
             SIM_LOG("[TIME] 20");
             SIM_LOG(yy);
             SIM_LOG("/");
@@ -1349,6 +1352,16 @@ static void SIM800_ProcessCommandQueue(SIM800_t *sim)
     // ✅ اگه SMS در حال ارسال بود، صبر کن
     if (sim->sms_state != SMS_IDLE && sim->sms_state != SMS_WAIT_PROMPT)
     {
+        return;
+    }
+
+    // ✅ اگه CIPSEND هست ولی TCP وصل نیست، دستور رو رد کن
+    if (strstr(qcmd->cmd, "AT+CIPSEND") && sim->tcp_state != TCP_CONNECTED)
+    {
+        SIM_LOGLN("[QUEUE] Skip CIPSEND - TCP not connected");
+        qcmd->active = false;
+        sim->cmd_queue_head = (sim->cmd_queue_head + 1) % SIM800_CMD_QUEUE_SIZE;
+        sim->cmd_queue_size--;
         return;
     }
 

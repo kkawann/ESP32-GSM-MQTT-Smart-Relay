@@ -1,0 +1,828 @@
+bash
+
+cat > /mnt/user-data/outputs/gpsv1.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GPS v1.0.0 — سیستم ردیابی خودرو</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A0E1A;--surface:#111827;--surface2:#1A2236;--surface3:#243044;
+  --border:rgba(255,255,255,0.07);--accent:#3B82F6;--accent2:#10B981;
+  --warn:#F59E0B;--danger:#EF4444;--text:#F1F5F9;--text2:#94A3B8;--text3:#475569;
+  --radius:12px;--radius-sm:8px;
+}
+body{font-family:'Vazirmatn',sans-serif;background:var(--bg);color:var(--text);direction:rtl;min-height:100vh;overflow:hidden}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 30% 50%,rgba(59,130,246,0.08) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 20%,rgba(16,185,129,0.06) 0%,transparent 50%),var(--bg)}
+.auth-card{width:360px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 32px;box-shadow:0 24px 80px rgba(0,0,0,0.5)}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,#3B82F6,#10B981);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{font-size:13px;color:var(--text2);margin-top:4px}
+.auth-label{font-size:13px;color:var(--text2);margin-bottom:8px;display:block}
+.auth-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;color:var(--text);font-family:inherit;font-size:15px;direction:ltr;text-align:center;letter-spacing:4px;transition:border-color .2s;outline:none}
+.auth-input:focus{border-color:var(--accent)}
+.auth-btn{width:100%;padding:13px;border-radius:var(--radius-sm);border:none;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-top:16px;transition:all .2s}
+.auth-btn-primary{background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;box-shadow:0 4px 20px rgba(59,130,246,0.3)}
+.auth-btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(59,130,246,0.4)}
+.auth-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-error{margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-sm);font-size:13px;color:#FCA5A5;text-align:center}
+.auth-success{margin-top:12px;padding:10px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-sm);font-size:13px;color:#6EE7B7;text-align:center}
+.code-inputs{display:flex;gap:8px;justify-content:center;margin:16px 0;direction:ltr}
+.code-input{width:56px;height:56px;text-align:center;font-size:22px;font-weight:700;background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:monospace;outline:none;transition:border-color .2s}
+.code-input:focus{border-color:var(--accent)}
+.code-input.filled{border-color:var(--accent2)}
+.hint-text{margin-top:16px;font-size:12px;color:var(--text3);text-align:center}
+.hint-text span{color:var(--accent);font-family:monospace}
+
+/* APP */
+.app-layout{display:flex;height:100vh;overflow:hidden}
+.hidden{display:none!important}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.sidebar-logo span{font-size:16px;font-weight:700;background:linear-gradient(135deg,#3B82F6,#10B981);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar-logo small{display:block;font-size:11px;color:var(--text3);margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;font-size:14px;color:var(--text2);border:none;background:none;width:100%;text-align:right;font-family:inherit}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(59,130,246,0.12);color:var(--accent)}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--border)}
+.mqtt-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);background:var(--surface2);font-size:12px;color:var(--text2)}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status-dot.connected{background:var(--accent2);box-shadow:0 0 6px var(--accent2)}
+.status-dot.disconnected{background:var(--danger)}
+.status-dot.connecting{background:var(--warn);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* MAIN */
+.main-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.logout-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s}
+.logout-btn:hover{background:rgba(239,68,68,0.1);color:#FCA5A5;border-color:rgba(239,68,68,0.3)}
+
+/* PAGE */
+.page{flex:1;overflow-y:auto;padding:20px}
+
+/* VEHICLE TABS */
+.vehicle-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.vtab{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.vtab:hover{border-color:var(--accent);color:var(--text)}
+.vtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.vtab-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.vtab-sig{width:6px;height:6px;border-radius:50%}
+
+/* DASHBOARD GRID */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:8px}
+.stat-value{font-size:28px;font-weight:700;line-height:1}
+.stat-unit{font-size:13px;color:var(--text2);font-weight:400;margin-right:4px}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:6px}
+.engine-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:16px;font-weight:600}
+.engine-on{background:rgba(16,185,129,0.15);color:#10B981}
+.engine-off{background:rgba(239,68,68,0.15);color:#EF4444}
+
+/* RELAY */
+.relay-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.relay-info h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.relay-info p{font-size:12px;color:var(--text2)}
+.relay-btns{display:flex;gap:10px}
+.relay-btn{padding:10px 24px;border-radius:8px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:110px}
+.relay-btn:disabled{opacity:.5;cursor:not-allowed}
+.relay-btn-kill{background:rgba(239,68,68,0.15);color:#EF4444;border:1px solid rgba(239,68,68,0.3)}
+.relay-btn-kill:hover:not(:disabled){background:rgba(239,68,68,0.25)}
+.relay-btn-start{background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3)}
+.relay-btn-start:hover:not(:disabled){background:rgba(16,185,129,0.25)}
+
+/* MAP */
+.map-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;height:400px;position:relative}
+#main-map,#history-map{width:100%;height:100%}
+.gps-lost-banner{position:absolute;top:12px;right:50%;transform:translateX(50%);background:rgba(239,68,68,0.92);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:1000;display:flex;align-items:center;gap:8px;white-space:nowrap}
+
+/* HISTORY */
+.history-stats{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.history-stats-row{display:flex;gap:24px;font-size:13px;color:var(--text2);margin-bottom:12px}
+.history-legend{display:flex;gap:16px;font-size:12px;color:var(--text3)}
+.legend-line{width:24px;height:3px;border-radius:2px;display:inline-block}
+.legend-dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block}
+.history-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.history-item-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.history-item-body{flex:1}
+.history-item-title{font-size:13px;font-weight:500}
+.history-item-sub{font-size:11px;color:var(--text2);margin-top:3px}
+.history-item-time{font-size:11px;color:var(--text3);direction:ltr;white-space:nowrap}
+.history-map-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;height:320px;margin-bottom:16px}
+
+/* SETTINGS */
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
+.settings-section-header{padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600}
+.settings-body{padding:16px 20px}
+.phone-list{display:flex;flex-direction:column;gap:10px}
+.phone-row{display:flex;align-items:center;gap:10px}
+.phone-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-family:inherit;font-size:14px;direction:ltr;outline:none;transition:border-color .2s}
+.phone-input:focus{border-color:var(--accent)}
+.icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.icon-btn:hover{background:rgba(239,68,68,0.1);color:#EF4444;border-color:rgba(239,68,68,0.3)}
+.add-phone-btn{width:100%;padding:10px;margin-top:10px;border-radius:var(--radius-sm);border:1px dashed var(--border);background:none;color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.add-phone-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,0.05)}
+.save-btn{padding:10px 24px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(59,130,246,0.3)}
+.save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(59,130,246,0.4)}
+.vehicle-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.vehicle-row:last-child{border-bottom:none}
+.vehicle-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.vehicle-name{flex:1;font-size:14px;font-weight:500}
+.vehicle-id{font-size:11px;color:var(--text3);direction:ltr;font-family:monospace}
+.mqtt-info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.mqtt-info-row:last-child{border-bottom:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 20px;font-size:13px;z-index:9999;transition:transform .3s ease;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{color:#6EE7B7;border-color:rgba(16,185,129,0.3)}
+.toast.error{color:#FCA5A5;border-color:rgba(239,68,68,0.3)}
+.toast.info{color:#93C5FD;border-color:rgba(59,130,246,0.3)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:80px 20px;color:var(--text3)}
+.empty-state .icon{font-size:48px;margin-bottom:16px}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH ═══ -->
+<div id="auth-screen">
+  <!-- STEP 1: TOKEN -->
+  <div id="step-token" class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="margin-bottom:12px">
+          <circle cx="24" cy="24" r="24" fill="rgba(59,130,246,0.1)"/>
+          <circle cx="24" cy="24" r="10" stroke="#3B82F6" stroke-width="2" fill="none"/>
+          <circle cx="24" cy="24" r="4" fill="#3B82F6"/>
+          <line x1="24" y1="4" x2="24" y2="14" stroke="#3B82F6" stroke-width="2"/>
+          <line x1="24" y1="34" x2="24" y2="44" stroke="#3B82F6" stroke-width="2"/>
+          <line x1="4" y1="24" x2="14" y2="24" stroke="#3B82F6" stroke-width="2"/>
+          <line x1="34" y1="24" x2="44" y2="24" stroke="#3B82F6" stroke-width="2"/>
+        </svg>
+        <h1>GPS v1.0.0</h1>
+        <p>سیستم ردیابی هوشمند خودرو</p>
+      </div>
+      <label class="auth-label">توکن دسترسی</label>
+      <input id="token-input" class="auth-input" type="text" placeholder="توکن خود را وارد کنید" autocomplete="off"/>
+      <div id="token-error" class="auth-error hidden"></div>
+      <div id="token-success" class="auth-success hidden"></div>
+      <button class="auth-btn auth-btn-primary" onclick="submitToken()">تأیید توکن</button>
+      <div class="hint-text">توکن آزمایشی: <span>GPS2024</span></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: CODE -->
+  <div id="step-code" class="auth-wrap hidden">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="margin-bottom:12px">
+          <circle cx="24" cy="24" r="24" fill="rgba(16,185,129,0.1)"/>
+          <rect x="12" y="16" width="24" height="18" rx="3" stroke="#10B981" stroke-width="2" fill="none"/>
+          <path d="M16 16v-4a8 8 0 0 1 16 0v4" stroke="#10B981" stroke-width="2" fill="none"/>
+          <circle cx="24" cy="25" r="3" fill="#10B981"/>
+        </svg>
+        <h1>GPS v1.0.0</h1>
+        <p>کد تأیید ارسال شد</p>
+      </div>
+      <label class="auth-label" style="text-align:center">کد ۴ رقمی را وارد کنید</label>
+      <div class="code-inputs">
+        <input class="code-input" id="c0" maxlength="1" inputmode="numeric" oninput="codeInput(0,this)" onkeydown="codeKey(0,event)"/>
+        <input class="code-input" id="c1" maxlength="1" inputmode="numeric" oninput="codeInput(1,this)" onkeydown="codeKey(1,event)"/>
+        <input class="code-input" id="c2" maxlength="1" inputmode="numeric" oninput="codeInput(2,this)" onkeydown="codeKey(2,event)"/>
+        <input class="code-input" id="c3" maxlength="1" inputmode="numeric" oninput="codeInput(3,this)" onkeydown="codeKey(3,event)"/>
+      </div>
+      <div id="code-error" class="auth-error hidden"></div>
+      <button class="auth-btn auth-btn-primary" onclick="submitCode()">ورود به سیستم</button>
+      <div class="hint-text">کد آزمایشی: <span style="color:#10B981">1234</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app-screen" class="app-layout hidden">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <span>GPS v1.0.0</span>
+      <small>سیستم ردیابی خودرو</small>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        داشبورد
+      </button>
+      <button class="nav-item" id="nav-history" onclick="showPage('history')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        تاریخچه
+      </button>
+      <button class="nav-item" id="nav-settings" onclick="showPage('settings')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        تنظیمات
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="mqtt-status">
+        <div class="status-dot disconnected" id="mqtt-dot"></div>
+        <span id="mqtt-label">قطع</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">داشبورد — نقشه زنده</div>
+      <div class="topbar-right">
+        <span style="font-size:12px;color:var(--text2)" id="topbar-date"></span>
+        <button class="logout-btn" onclick="logout()">خروج</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page">
+      <div class="vehicle-tabs" id="dash-tabs"></div>
+      <div class="dash-grid">
+        <div class="stat-card">
+          <div class="stat-label">سرعت لحظه‌ای</div>
+          <div class="stat-value"><span id="stat-speed">—</span><span class="stat-unit">km/h</span></div>
+          <div class="stat-sub" id="stat-speed-sub">آپدیت هر ۳ ثانیه</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">ماهواره‌های متصل</div>
+          <div class="stat-value"><span id="stat-sat">—</span><span class="stat-unit">ماهواره</span></div>
+          <div class="stat-sub" id="stat-sat-sub">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">وضعیت GPS</div>
+          <div class="stat-value" style="font-size:18px;margin-top:4px" id="stat-gps">—</div>
+          <div class="stat-sub" id="stat-gps-sub">منتظر سیگنال...</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">وضعیت موتور</div>
+          <div style="margin-top:8px" id="stat-engine-wrap">
+            <span style="color:var(--text3)">—</span>
+          </div>
+          <div class="stat-sub">وضعیت احراز‌شده</div>
+        </div>
+      </div>
+
+      <div class="relay-section">
+        <div class="relay-info">
+          <h3>کنترل رله خودرو</h3>
+          <p id="relay-status-text">آماده دریافت دستور</p>
+        </div>
+        <div class="relay-btns">
+          <button class="relay-btn relay-btn-start" onclick="sendRelay('start')" id="relay-start">🟢 روشن کردن</button>
+          <button class="relay-btn relay-btn-kill" onclick="sendRelay('kill')" id="relay-kill">🔴 خاموش کردن</button>
+        </div>
+      </div>
+
+      <div class="map-container">
+        <div class="gps-lost-banner hidden" id="gps-lost-banner">⚠ GPS قطع است</div>
+        <div id="main-map"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="page-history" class="page hidden">
+      <div class="vehicle-tabs" id="history-tabs"></div>
+      <div id="history-content">
+        <div class="empty-state">
+          <div class="icon">📡</div>
+          <div>در انتظار دریافت داده از دستگاه GPS...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="page-settings" class="page hidden">
+      <div class="settings-section">
+        <div class="settings-section-header">📱 شماره‌های موبایل (<span id="phone-count">1</span>/10)</div>
+        <div class="settings-body">
+          <div class="phone-list" id="phone-list"></div>
+          <button class="add-phone-btn" onclick="addPhone()" id="add-phone-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            افزودن شماره
+          </button>
+          <div style="margin-top:16px;display:flex;justify-content:flex-end">
+            <button class="save-btn" onclick="savePhones()">ذخیره</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">🚗 خودروها</div>
+        <div class="settings-body" id="vehicles-list"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">🔌 اطلاعات MQTT</div>
+        <div class="settings-body">
+          <div class="mqtt-info-row"><span style="color:var(--text2)">آدرس بروکر</span><span style="font-family:monospace;direction:ltr">188.121.124.97</span></div>
+          <div class="mqtt-info-row"><span style="color:var(--text2)">پورت</span><span style="font-family:monospace;direction:ltr">1883 (WS: 9001)</span></div>
+          <div class="mqtt-info-row"><span style="color:var(--text2)">Client ID</span><span style="font-family:monospace;direction:ltr">emqx_MzYwNT</span></div>
+          <div class="mqtt-info-row"><span style="color:var(--text2)">وضعیت</span><span id="settings-mqtt-status" style="font-family:monospace">قطع</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ CONFIG ═══
+const VALID_TOKEN = 'GPS2024';
+const VERIFY_CODE = '1234';
+const VEHICLES = [
+  { id: 'car1', name: 'خودرو ۱', color: '#3B82F6' },
+  { id: 'car2', name: 'خودرو ۲', color: '#10B981' },
+  { id: 'car3', name: 'خودرو ۳', color: '#F59E0B' },
+];
+const BASE_POS = [
+  { lat: 35.6892, lng: 51.389 },
+  { lat: 35.700,  lng: 51.400 },
+  { lat: 35.680,  lng: 51.380 },
+];
+
+// ═══ STATE ═══
+let activeVehicle = 'car1';
+let currentPage = 'dashboard';
+let vehicles = VEHICLES.map((v, i) => ({ ...v, gps: null, history: [] }));
+let phones = [''];
+let mainMap = null;
+let historyMap = null;
+let markers = {};
+let simInterval = null;
+let relayPending = false;
+let mqttConnected = false;
+
+// ═══ AUTH ═══
+function submitToken() {
+  const val = document.getElementById('token-input').value.trim().toUpperCase();
+  const err = document.getElementById('token-error');
+  const suc = document.getElementById('token-success');
+  if (val === VALID_TOKEN) {
+    err.classList.add('hidden');
+    suc.textContent = '✓ توکن تأیید شد — کد ارسال شد';
+    suc.classList.remove('hidden');
+    setTimeout(() => {
+      document.getElementById('step-token').classList.add('hidden');
+      document.getElementById('step-code').classList.remove('hidden');
+      document.getElementById('c0').focus();
+    }, 1000);
+  } else {
+    suc.classList.add('hidden');
+    err.textContent = 'توکن نامعتبر است';
+    err.classList.remove('hidden');
+  }
+}
+document.getElementById('token-input').addEventListener('keydown', e => { if(e.key==='Enter') submitToken(); });
+
+function codeInput(i, el) {
+  el.value = el.value.replace(/[^0-9]/g,'');
+  el.classList.toggle('filled', el.value !== '');
+  if (el.value && i < 3) document.getElementById('c'+(i+1)).focus();
+}
+function codeKey(i, e) {
+  if (e.key==='Backspace' && !document.getElementById('c'+i).value && i>0) {
+    document.getElementById('c'+(i-1)).focus();
+  }
+  if (e.key==='Enter') submitCode();
+}
+function submitCode() {
+  const code = [0,1,2,3].map(i => document.getElementById('c'+i).value).join('');
+  const err = document.getElementById('code-error');
+  if (code === VERIFY_CODE) {
+    err.classList.add('hidden');
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    initApp();
+  } else {
+    err.textContent = 'کد تأیید اشتباه است';
+    err.classList.remove('hidden');
+    [0,1,2,3].forEach(i => { const el=document.getElementById('c'+i); el.value=''; el.classList.remove('filled'); });
+    document.getElementById('c0').focus();
+  }
+}
+
+function logout() {
+  clearInterval(simInterval);
+  mainMap = null; historyMap = null; markers = {};
+  document.getElementById('app-screen').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('step-token').classList.remove('hidden');
+  document.getElementById('step-code').classList.add('hidden');
+  document.getElementById('token-input').value = '';
+  document.getElementById('token-error').classList.add('hidden');
+  document.getElementById('token-success').classList.add('hidden');
+  [0,1,2,3].forEach(i => { const el=document.getElementById('c'+i); el.value=''; el.classList.remove('filled'); });
+  document.getElementById('code-error').classList.add('hidden');
+  setMqttStatus('disconnected');
+}
+
+// ═══ INIT ═══
+function initApp() {
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('fa-IR');
+  renderVehiclesList();
+  renderPhoneList();
+  buildVehicleTabs('dash-tabs', setActiveVehicle);
+  buildVehicleTabs('history-tabs', setActiveVehicleHistory);
+
+  setMqttStatus('connecting');
+  setTimeout(() => setMqttStatus('connected'), 1500);
+
+  initMainMap();
+  startSimulator();
+}
+
+// ═══ MAP ═══
+function initMainMap() {
+  if (mainMap) return;
+  mainMap = L.map('main-map', { zoomControl: false }).setView([35.6892, 51.389], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+  }).addTo(mainMap);
+  L.control.zoom({ position: 'topleft' }).addTo(mainMap);
+}
+
+function makeIcon(color, label) {
+  return L.divIcon({
+    html: `<div style="
+      position:relative;width:32px;height:32px;border-radius:50% 50% 50% 0;
+      background:${color};transform:rotate(-45deg);
+      border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5)">
+      <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);font-size:12px">🚗</span>
+    </div>`,
+    className: '', iconSize: [32,32], iconAnchor: [16,32]
+  });
+}
+
+function updateMainMap() {
+  if (!mainMap) return;
+  const activeV = vehicles.find(v => v.id === activeVehicle);
+
+  vehicles.forEach((v, i) => {
+    if (!v.gps || v.gps.signal === 'lost') {
+      if (markers[v.id]) { mainMap.removeLayer(markers[v.id]); delete markers[v.id]; }
+      return;
+    }
+    const {lat, lng} = v.gps;
+    const popup = `<div style="font-family:Vazirmatn,sans-serif;direction:rtl;min-width:140px">
+      <strong>${v.name}</strong><br>
+      <span style="font-size:12px;color:#666">سرعت: ${v.gps.speed} km/h</span><br>
+      <span style="font-size:12px;color:#666">ماهواره: ${v.gps.satellites}</span><br>
+      <span style="font-size:12px;color:${v.gps.engine?'#10B981':'#EF4444'}">${v.gps.engine?'✓ روشن':'✗ خاموش'}</span>
+    </div>`;
+    if (markers[v.id]) {
+      markers[v.id].setLatLng([lat, lng]).setPopupContent(popup);
+    } else {
+      markers[v.id] = L.marker([lat, lng], { icon: makeIcon(v.color) })
+        .addTo(mainMap).bindPopup(popup);
+    }
+  });
+
+  if (activeV?.gps && activeV.gps.signal !== 'lost') {
+    mainMap.panTo([activeV.gps.lat, activeV.gps.lng], { animate: true, duration: 0.5 });
+  }
+}
+
+// ═══ SIMULATOR ═══
+function generateGPS(base) {
+  return {
+    lat: base.lat + (Math.random() - 0.5) * 0.002,
+    lng: base.lng + (Math.random() - 0.5) * 0.002,
+    speed: Math.floor(Math.random() * 120),
+    satellites: Math.floor(Math.random() * 8) + 4,
+    signal: Math.random() > 0.08 ? 'ok' : 'lost',
+    engine: Math.random() > 0.25,
+    timestamp: Date.now(),
+  };
+}
+
+function startSimulator() {
+  // initial data
+  vehicles = vehicles.map((v, i) => {
+    const gps = generateGPS(BASE_POS[i]);
+    return { ...v, gps, history: [{ ...gps, connected: true, time: now() }] };
+  });
+  updateDashboard();
+  updateMainMap();
+
+  simInterval = setInterval(() => {
+    vehicles = vehicles.map((v, i) => {
+      const gps = generateGPS(BASE_POS[i]);
+      const point = { ...gps, connected: Math.random() > 0.15, time: now() };
+      return { ...v, gps, history: [...v.history.slice(-99), point] };
+    });
+    updateDashboard();
+    updateMainMap();
+    if (currentPage === 'history') updateHistoryPage();
+  }, 3000);
+}
+
+function now() {
+  return new Date().toLocaleTimeString('fa-IR');
+}
+
+// ═══ DASHBOARD ═══
+function updateDashboard() {
+  const v = vehicles.find(v => v.id === activeVehicle);
+  if (!v || !v.gps) return;
+  const g = v.gps;
+
+  document.getElementById('stat-speed').textContent = g.signal === 'ok' ? g.speed : '—';
+  document.getElementById('stat-speed-sub').textContent = g.signal === 'ok' ? 'آپدیت هر ۳ ثانیه' : 'GPS قطع است';
+
+  document.getElementById('stat-sat').textContent = g.signal === 'ok' ? g.satellites : '—';
+  document.getElementById('stat-sat-sub').textContent = g.signal === 'ok' ? (g.satellites >= 6 ? 'سیگنال قوی' : 'سیگنال ضعیف') : '—';
+
+  const gpsEl = document.getElementById('stat-gps');
+  gpsEl.textContent = g.signal === 'ok' ? '✓ آنلاین' : '✗ GPS قطع';
+  gpsEl.style.color = g.signal === 'ok' ? 'var(--accent2)' : 'var(--danger)';
+  document.getElementById('stat-gps-sub').textContent = `آخرین آپدیت: ${new Date(g.timestamp).toLocaleTimeString('fa-IR')}`;
+
+  const engineWrap = document.getElementById('stat-engine-wrap');
+  engineWrap.innerHTML = g.signal === 'ok'
+    ? `<span class="engine-badge ${g.engine ? 'engine-on' : 'engine-off'}"><span>${g.engine ? '●' : '○'}</span>${g.engine ? 'روشن' : 'خاموش'}</span>`
+    : `<span style="color:var(--text3)">—</span>`;
+
+  const banner = document.getElementById('gps-lost-banner');
+  if (g.signal === 'lost') banner.classList.remove('hidden');
+  else banner.classList.add('hidden');
+
+  // update tab signal dots
+  updateTabDots();
+}
+
+function updateTabDots() {
+  vehicles.forEach(v => {
+    const dot = document.getElementById('sig-dot-dash-' + v.id);
+    if (dot) {
+      dot.style.background = (!v.gps || v.gps.signal === 'lost') ? '#EF4444' : '#10B981';
+    }
+  });
+}
+
+// ═══ VEHICLE TABS ═══
+function buildVehicleTabs(containerId, onSelect) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  VEHICLES.forEach((v, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'vtab' + (v.id === activeVehicle ? ' active' : '');
+    btn.id = 'tab-' + containerId + '-' + v.id;
+    btn.innerHTML = `
+      <div class="vtab-dot" id="col-dot-${containerId}-${v.id}" style="background:${v.id === activeVehicle ? '#fff' : v.color}"></div>
+      ${v.name}
+      <span class="vtab-sig" id="sig-dot-${containerId === 'dash-tabs' ? 'dash' : 'hist'}-${v.id}" style="background:#EF4444;border-radius:50%"></span>
+    `;
+    btn.onclick = () => onSelect(v.id, containerId);
+    el.appendChild(btn);
+  });
+}
+
+function setActiveVehicle(id, containerId) {
+  activeVehicle = id;
+  refreshTabs(containerId || 'dash-tabs');
+  updateDashboard();
+  updateMainMap();
+}
+
+function setActiveVehicleHistory(id, containerId) {
+  activeVehicle = id;
+  refreshTabs(containerId || 'history-tabs');
+  updateHistoryPage();
+}
+
+function refreshTabs(containerId) {
+  VEHICLES.forEach(v => {
+    const btn = document.getElementById('tab-' + containerId + '-' + v.id);
+    const dot = document.getElementById('col-dot-' + containerId + '-' + v.id);
+    if (btn) btn.className = 'vtab' + (v.id === activeVehicle ? ' active' : '');
+    if (dot) dot.style.background = v.id === activeVehicle ? '#fff' : v.color;
+  });
+}
+
+// ═══ RELAY ═══
+function sendRelay(action) {
+  if (relayPending) return;
+  relayPending = true;
+  const v = vehicles.find(v => v.id === activeVehicle);
+  document.getElementById('relay-start').disabled = true;
+  document.getElementById('relay-kill').disabled = true;
+  document.getElementById('relay-status-text').textContent = 'در حال ارسال دستور...';
+
+  // Simulate MQTT publish
+  setTimeout(() => {
+    relayPending = false;
+    document.getElementById('relay-start').disabled = false;
+    document.getElementById('relay-kill').disabled = false;
+    document.getElementById('relay-status-text').textContent = 'آماده دریافت دستور';
+    showToast(action === 'kill' ? `دستور خاموش کردن ${v.name} ارسال شد` : `دستور روشن کردن ${v.name} ارسال شد`, 'success');
+  }, 1200);
+}
+
+// ═══ HISTORY ═══
+function updateHistoryPage() {
+  const v = vehicles.find(v => v.id === activeVehicle);
+  const pts = v?.history || [];
+  const container = document.getElementById('history-content');
+
+  if (pts.length < 2) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📡</div><div>در انتظار دریافت داده از دستگاه GPS...</div></div>';
+    return;
+  }
+
+  const connectedPts = pts.filter(p => p.connected);
+  const disconnectedPts = pts.filter(p => !p.connected);
+
+  container.innerHTML = `
+    <div class="history-stats">
+      <div class="history-stats-row">
+        <span>📍 تعداد نقاط: ${pts.length}</span>
+        <span>🔗 متصل: ${connectedPts.length}</span>
+        <span>⚡ قطع: ${disconnectedPts.length}</span>
+      </div>
+      <div class="history-legend">
+        <span style="display:flex;align-items:center;gap:6px">
+          <div class="legend-line" style="background:${v.color}"></div>
+          مسیر رفته (متصل)
+        </span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <div class="legend-dot"></div>
+          نقطه بدون اتصال
+        </span>
+      </div>
+    </div>
+    <div class="history-map-wrap"><div id="history-map"></div></div>
+    <div class="history-list" id="history-list-items"></div>
+  `;
+
+  // Draw history map
+  if (historyMap) { historyMap.remove(); historyMap = null; }
+  historyMap = L.map('history-map').setView([pts[0].lat, pts[0].lng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(historyMap);
+
+  if (connectedPts.length > 1) {
+    L.polyline(connectedPts.map(p => [p.lat, p.lng]), { color: v.color, weight: 3, opacity: 0.85 }).addTo(historyMap);
+  }
+
+  pts.forEach((p, i) => {
+    L.circleMarker([p.lat, p.lng], {
+      radius: p.connected ? 6 : 4,
+      fillColor: p.connected ? v.color : '#555',
+      color: '#fff', weight: 2, fillOpacity: 1
+    }).addTo(historyMap).bindTooltip(
+      i === 0 ? 'شروع' : i === pts.length - 1 ? 'پایان' : `${p.speed} km/h`,
+      { permanent: i === 0 || i === pts.length - 1 }
+    );
+  });
+
+  const bounds = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+  historyMap.fitBounds(bounds, { padding: [30, 30] });
+
+  // List
+  const listEl = document.getElementById('history-list-items');
+  [...pts].reverse().slice(0, 20).forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div class="history-item-icon" style="background:${p.connected ? 'rgba(59,130,246,0.1)' : 'rgba(100,100,100,0.1)'}">
+        ${p.connected ? '📍' : '◎'}
+      </div>
+      <div class="history-item-body">
+        <div class="history-item-title">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
+        <div class="history-item-sub">سرعت: ${p.speed} km/h · ماهواره: ${p.satellites} · ${p.connected ? '✓ مسیر متصل' : '✗ نقطه منفرد'}</div>
+      </div>
+      <div class="history-item-time">${p.time}</div>
+    `;
+    listEl.appendChild(item);
+  });
+}
+
+// ═══ SETTINGS ═══
+function renderPhoneList() {
+  const list = document.getElementById('phone-list');
+  list.innerHTML = '';
+  phones.forEach((ph, i) => {
+    const row = document.createElement('div');
+    row.className = 'phone-row';
+    row.innerHTML = `
+      <input class="phone-input" type="tel" placeholder="+98 9XX XXX XXXX" value="${ph}" oninput="phones[${i}]=this.value" direction="ltr"/>
+      <button class="icon-btn" onclick="removePhone(${i})">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+      </button>
+    `;
+    list.appendChild(row);
+  });
+  document.getElementById('phone-count').textContent = phones.length;
+  document.getElementById('add-phone-btn').style.display = phones.length >= 10 ? 'none' : '';
+}
+
+function addPhone() {
+  if (phones.length < 10) { phones.push(''); renderPhoneList(); }
+}
+
+function removePhone(i) {
+  phones.splice(i, 1);
+  if (phones.length === 0) phones = [''];
+  renderPhoneList();
+}
+
+function savePhones() {
+  showToast('شماره‌ها ذخیره شد', 'success');
+}
+
+function renderVehiclesList() {
+  const el = document.getElementById('vehicles-list');
+  el.innerHTML = '';
+  VEHICLES.forEach(v => {
+    const row = document.createElement('div');
+    row.className = 'vehicle-row';
+    row.innerHTML = `
+      <div class="vehicle-color-dot" style="background:${v.color}"></div>
+      <div class="vehicle-name">${v.name}</div>
+      <div class="vehicle-id">gps/${v.id}/location</div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// ═══ PAGE NAV ═══
+function showPage(page) {
+  currentPage = page;
+  ['dashboard','history','settings'].forEach(p => {
+    document.getElementById('page-'+p).classList.toggle('hidden', p !== page);
+    document.getElementById('nav-'+p).classList.toggle('active', p === page);
+  });
+  const titles = { dashboard:'داشبورد — نقشه زنده', history:'تاریخچه مسیر', settings:'تنظیمات' };
+  document.getElementById('topbar-title').textContent = titles[page];
+
+  if (page === 'history') {
+    buildVehicleTabs('history-tabs', setActiveVehicleHistory);
+    updateHistoryPage();
+  }
+  if (page === 'dashboard' && mainMap) {
+    setTimeout(() => mainMap.invalidateSize(), 100);
+  }
+}
+
+// ═══ MQTT STATUS ═══
+function setMqttStatus(status) {
+  const dot = document.getElementById('mqtt-dot');
+  const label = document.getElementById('mqtt-label');
+  const settingsStatus = document.getElementById('settings-mqtt-status');
+  dot.className = 'status-dot ' + status;
+  const labels = { connected:'MQTT متصل', connecting:'در حال اتصال...', disconnected:'قطع' };
+  label.textContent = labels[status];
+  if (settingsStatus) {
+    settingsStatus.textContent = status === 'connected' ? '✓ متصل' : 'قطع';
+    settingsStatus.style.color = status === 'connected' ? 'var(--accent2)' : 'var(--text)';
+  }
+}
+
+// ═══ TOAST ═══
+let toastTimer = null;
+function showToast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
+HTMLEOF
+echo "Done"
+Output
+
+Done
+Done

@@ -72,10 +72,11 @@ extern uint16_t rfLearnedBitLength;
 extern bool rfCodeReady;
 extern unsigned long lastRFCode;
 extern unsigned long lastRFTime;
+extern uint8_t lastRFProtocol;
 extern int rfClickCount;
 extern unsigned long firstClickTime;
 extern bool longPressDetected;
-extern RFEventHistory rfHistory[5];
+extern RFEventHistory rfHistory[RF_HISTORY_SIZE];
 extern int rfHistoryIndex;
 
 // ---------------------------------------------------------------------------

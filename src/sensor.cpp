@@ -6,11 +6,12 @@
 
 uint32_t extractRawValue(uint32_t code, uint32_t valueMask)
 {
-    if (valueMask == 0)
+    uint32_t cleanMask = valueMask & 0x0FFFFFFFUL; // strip type-tag bits
+    if (cleanMask == 0)
         return 0;
-    uint32_t masked = code & valueMask;
+    uint32_t masked = code & cleanMask;
     uint32_t shift = 0;
-    uint32_t tmp = valueMask;
+    uint32_t tmp = cleanMask;
     while (tmp && !(tmp & 1))
     {
         tmp >>= 1;
@@ -28,7 +29,8 @@ bool sensorMatchesCode(const RFSensor &s, uint32_t code,
         return false;
     if (s.bitLength != bits)
         return false;
-    return (code & s.baseMask) == (s.baseCode & s.baseMask);
+    uint32_t cleanMask = s.baseMask & 0x0FFFFFFFUL; // strip type-tag bits
+    return (code & cleanMask) == (s.baseCode & cleanMask);
 }
 
 void addToSensorHistory(int idx, float value)
@@ -59,11 +61,6 @@ float extractValue(const RFSensor &s, uint32_t code)
 
 bool processSensorCode(uint32_t code, uint8_t protocol, uint16_t bitLen)
 {
-    static const char *units[] = {"%", "\xC2\xB0"
-                                       "C",
-                                  "%RH", "cm", "V", ""};
-    static const int unitsCnt = (int)(sizeof(units) / sizeof(units[0]));
-
     bool found = false;
 
     for (int i = 0; i < rfSensorCount; i++)
@@ -86,7 +83,8 @@ bool processSensorCode(uint32_t code, uint8_t protocol, uint16_t bitLen)
 
             strncpy(sensorName, rfSensors[i].name, sizeof(sensorName) - 1);
             sensorName[sizeof(sensorName) - 1] = '\0';
-            valueType = rfSensors[i].valueType;
+            // Read type from signature (upper 4 bits of baseMask)
+            valueType = getSensorTypeFromMask(rfSensors[i].baseMask);
 
             xSemaphoreGive(xSensorMutex);
         }
@@ -97,12 +95,13 @@ bool processSensorCode(uint32_t code, uint8_t protocol, uint16_t bitLen)
 
         addToSensorHistory(i, physical);
 
-        int unitIdx = ((int)valueType < unitsCnt) ? (int)valueType
-                                                  : (unitsCnt - 1);
+        // Auto-unit from type signature
+        static const char *typeUnits[] = {"%","\xC2\xB0""C","%RH","cm","V","bool","bool",""};
+        const char *unit = (valueType < 8) ? typeUnits[valueType] : "";
 
         char msg[64];
         snprintf(msg, sizeof(msg), "Sensor '%s' = %.1f%s",
-                 sensorName, physical, units[unitIdx]);
+                 sensorName, physical, unit);
         addLog(2, 0, msg);
 
         found = true;
@@ -114,4 +113,15 @@ void saveSensorsAsync()
 {
     SaveCommand cmd = {2};
     xQueueSend(qSave, &cmd, pdMS_TO_TICKS(50));
+}
+
+// ─── Pack SensorTypeId into upper 4 bits of baseMask ───
+void packSensorTypeIntoMask(RFSensor &s, uint8_t sensorTypeId)
+{
+    s.baseMask = (s.baseMask & 0x0FFFFFFFUL) | (((uint32_t)(sensorTypeId & 0x0F)) << 28);
+}
+
+uint8_t getSensorTypeFromMask(uint32_t mask)
+{
+    return (uint8_t)((mask >> 28) & 0x0F);
 }

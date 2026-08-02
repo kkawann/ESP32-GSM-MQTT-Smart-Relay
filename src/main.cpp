@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include "nvs_flash.h"
 #include "globals.h"
 #include "config.h"
 #include "relay.h"
@@ -18,17 +19,32 @@
 
 void setup()
 {
+    // ── Watchdog FIRST — before anything can block the boot ──
+    esp_task_wdt_deinit();
+    esp_task_wdt_config_t wdt_config = {
+        .timeout_ms = 20000,
+        .idle_core_mask = 0,
+        .trigger_panic = true};
+    esp_task_wdt_init(&wdt_config);
+    esp_task_wdt_add(NULL); // register setup()/loop() (runs on core 1)
+
     Serial.begin(115200);
     delay(500);
     Serial.println("\n\n=== Smart Relay Pro v3.1 (with MQTT) ===");
 
-    // Watchdog (60s, no panic)
-    esp_task_wdt_deinit();
-    esp_task_wdt_config_t wdt_config = {
-        .timeout_ms = 60000,
-        .idle_core_mask = 0,
-        .trigger_panic = false};
-    esp_task_wdt_init(&wdt_config);
+    // ── NVS corruption recovery (protects against power-loss-during-write) ──
+    esp_err_t nvsErr = nvs_flash_init();
+    if (nvsErr == ESP_ERR_NVS_NO_FREE_PAGES || nvsErr == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        Serial.println("[NVS] Corrupt/incompatible, erasing...");
+        nvs_flash_erase();
+        nvsErr = nvs_flash_init();
+    }
+    if (nvsErr != ESP_OK)
+    {
+        Serial.printf("[NVS] Init failed: %d (continuing anyway)\n", nvsErr);
+    }
+    esp_task_wdt_reset();
 
     // GPIO
     qSMSIn = xQueueCreate(10, sizeof(SMSInMessage));
@@ -50,6 +66,7 @@ void setup()
         relays[i].notifySMS = false;
         setRelay(i, false);
     }
+    esp_task_wdt_reset();
 
     // WiFi SoftAP
     WiFi.mode(WIFI_AP);
@@ -61,13 +78,19 @@ void setup()
     wifiReady = true;
     Serial.print("AP IP: ");
     Serial.println(WiFi.softAPIP());
+    esp_task_wdt_reset();
 
-    // Load settings from NVS
+    // Load settings from NVS (each wrapped + watchdog reset in case one is corrupt/slow)
     loadAllSettings();
+    esp_task_wdt_reset();
     loadSensors();
+    esp_task_wdt_reset();
     loadAutomations();
+    esp_task_wdt_reset();
     loadRelayStates();
+    esp_task_wdt_reset();
     loadMQTTSettings();
+    esp_task_wdt_reset();
 
     // 433 MHz RF receiver
     rcSwitch.enableReceive(digitalPinToInterrupt(RF_RX_PIN));
@@ -78,6 +101,7 @@ void setup()
     SIM800_Init(&sim800, &Serial1);
     SIM800_SetSmsCallback(&sim800, smsCallback);
     SIM800_SetInitCallback(&sim800, initCallback);
+    esp_task_wdt_reset();
 
     lastSIM800Activity = millis();
     gsmBooting = true;
@@ -102,6 +126,7 @@ void setup()
     {
         Serial.println("[MQTT] Disabled or not configured");
     }
+    esp_task_wdt_reset();
 
     // FreeRTOS: mutexes
     mutexRelay = xSemaphoreCreateMutex();
@@ -149,6 +174,7 @@ void setup()
     xTimerStart(timerGSMCheck, 0);
     xTimerStart(timerClockSync, 0);
     xTimerStart(timerLED, 0);
+    esp_task_wdt_reset();
 
     // FreeRTOS: tasks
     xTaskCreatePinnedToCore(taskGSMFn, "GSM", 8192, NULL, 2, &taskGSM, 0);
@@ -162,6 +188,8 @@ void setup()
         xTaskCreatePinnedToCore(taskMQTTFn, "MQTT", 6144, NULL, 2, &taskMQTT, 0);
         Serial.println("[MQTT] Task created on Core 0");
     }
+    xTaskCreatePinnedToCore(taskRelayFn, "Relay", 4096, NULL, 4, NULL, 0);
+    esp_task_wdt_reset();
 
     // HTTP routes
     server.on("/", handleRoot);
@@ -223,6 +251,12 @@ void setup()
     server.on("/api/mqtt/disconnect", HTTP_POST, handleAPIMQTTDisconnect);
 
     server.begin();
+    esp_task_wdt_reset();
+
+    // setup()/loop() no longer needs individual WDT monitoring once tasks are up;
+    // each FreeRTOS task registers/resets its own watchdog inside tasks.cpp.
+    esp_task_wdt_delete(NULL);
+
     Serial.println("System Ready!");
 }
 

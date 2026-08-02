@@ -162,7 +162,13 @@ void processSequentialScene()
     }
     if (step->action == 3)
     {
-        if (relays[step->relay].isActive)
+        bool active = false;
+        if (xSemaphoreTake(mutexRelay, pdMS_TO_TICKS(10)) == pdTRUE)
+        {
+            active = relays[step->relay].isActive;
+            xSemaphoreGive(mutexRelay);
+        }
+        if (active)
             return;
     }
     currentSceneStep++;

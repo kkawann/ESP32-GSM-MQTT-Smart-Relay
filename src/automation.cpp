@@ -106,6 +106,15 @@ bool checkHysteresis(Automation &a)
     return changed;
 }
 
+// ─── Helper: get effective sensor list for a condition ───
+static bool getSensorValue(uint8_t sid, float &outVal)
+{
+    if (sid >= rfSensorCount || !rfSensors[sid].active || !rfSensors[sid].hasValue)
+        return false;
+    outVal = rfSensors[sid].lastValue;
+    return true;
+}
+
 // ─── 4. Evaluate Individual Conditions ───
 bool evalCondition(const AutoCondition &c)
 {
@@ -172,45 +181,151 @@ bool evalCondition(const AutoCondition &c)
     }
 
     case COND_SENSOR_GT:
-        if (c.sensorId < rfSensorCount && rfSensors[c.sensorId].active && rfSensors[c.sensorId].hasValue)
-            result = (rfSensors[c.sensorId].lastValue > c.thresh1);
+    {
+        // Multi-sensor: ANY of the bound sensors satisfies the condition (OR within condition)
+        uint8_t n = c.sensorIdCount;
+        bool anyOk = false;
+        if (n == 0)
+        {
+            // Legacy single-sensor fallback
+            float v;
+            if (getSensorValue(c.sensorId, v) && v > c.thresh1)
+                anyOk = true;
+        }
+        else
+        {
+            for (uint8_t k = 0; k < n && k < MAX_SENSORS_PER_COND; k++)
+            {
+                float v;
+                if (getSensorValue(c.sensorIds[k], v) && v > c.thresh1)
+                {
+                    anyOk = true;
+                    break;
+                }
+            }
+        }
+        result = anyOk;
         break;
+    }
 
     case COND_SENSOR_LT:
-        if (c.sensorId < rfSensorCount && rfSensors[c.sensorId].active && rfSensors[c.sensorId].hasValue)
-            result = (rfSensors[c.sensorId].lastValue < c.thresh1);
+    {
+        uint8_t n = c.sensorIdCount;
+        bool anyOk = false;
+        if (n == 0)
+        {
+            float v;
+            if (getSensorValue(c.sensorId, v) && v < c.thresh1)
+                anyOk = true;
+        }
+        else
+        {
+            for (uint8_t k = 0; k < n && k < MAX_SENSORS_PER_COND; k++)
+            {
+                float v;
+                if (getSensorValue(c.sensorIds[k], v) && v < c.thresh1)
+                {
+                    anyOk = true;
+                    break;
+                }
+            }
+        }
+        result = anyOk;
         break;
+    }
 
     case COND_SENSOR_BETWEEN:
-        if (c.sensorId < rfSensorCount && rfSensors[c.sensorId].active && rfSensors[c.sensorId].hasValue)
+    {
+        uint8_t n = c.sensorIdCount;
+        bool anyOk = false;
+        if (n == 0)
         {
-            float v = rfSensors[c.sensorId].lastValue;
-            result = (v >= c.thresh1 && v <= c.thresh2);
+            float v;
+            if (getSensorValue(c.sensorId, v) && v >= c.thresh1 && v <= c.thresh2)
+                anyOk = true;
         }
+        else
+        {
+            for (uint8_t k = 0; k < n && k < MAX_SENSORS_PER_COND; k++)
+            {
+                float v;
+                if (getSensorValue(c.sensorIds[k], v) && v >= c.thresh1 && v <= c.thresh2)
+                {
+                    anyOk = true;
+                    break;
+                }
+            }
+        }
+        result = anyOk;
         break;
+    }
 
     case COND_SENSOR_OUTSIDE:
-        if (c.sensorId < rfSensorCount && rfSensors[c.sensorId].active && rfSensors[c.sensorId].hasValue)
+    {
+        uint8_t n = c.sensorIdCount;
+        bool anyOk = false;
+        if (n == 0)
         {
-            float v = rfSensors[c.sensorId].lastValue;
-            result = (v < c.thresh1 || v > c.thresh2);
+            float v;
+            if (getSensorValue(c.sensorId, v) && (v < c.thresh1 || v > c.thresh2))
+                anyOk = true;
         }
+        else
+        {
+            for (uint8_t k = 0; k < n && k < MAX_SENSORS_PER_COND; k++)
+            {
+                float v;
+                if (getSensorValue(c.sensorIds[k], v) && (v < c.thresh1 || v > c.thresh2))
+                {
+                    anyOk = true;
+                    break;
+                }
+            }
+        }
+        result = anyOk;
         break;
+    }
 
     case COND_SENSOR_OFFLINE:
-        if (c.sensorId < rfSensorCount && rfSensors[c.sensorId].active)
+    {
+        uint8_t n = c.sensorIdCount;
+        bool anyOk = false;
+        if (n == 0)
         {
-            if (!rfSensors[c.sensorId].hasValue)
+            if (c.sensorId < rfSensorCount && rfSensors[c.sensorId].active)
             {
-                result = true;
-            }
-            else
-            {
-                uint32_t ageMs = (uint32_t)millis() - rfSensors[c.sensorId].lastUpdateMs;
-                result = (ageMs >= (uint32_t)c.offlineMinutes * 60000UL);
+                if (!rfSensors[c.sensorId].hasValue)
+                    anyOk = true;
+                else
+                {
+                    uint32_t ageMs = (uint32_t)millis() - rfSensors[c.sensorId].lastUpdateMs;
+                    anyOk = (ageMs >= (uint32_t)c.offlineMinutes * 60000UL);
+                }
             }
         }
+        else
+        {
+            for (uint8_t k = 0; k < n && k < MAX_SENSORS_PER_COND; k++)
+            {
+                uint8_t sid = c.sensorIds[k];
+                if (sid >= rfSensorCount || !rfSensors[sid].active)
+                    continue;
+                if (!rfSensors[sid].hasValue)
+                {
+                    anyOk = true;
+                    break;
+                }
+                uint32_t ageMs = (uint32_t)millis() - rfSensors[sid].lastUpdateMs;
+                if (ageMs >= (uint32_t)c.offlineMinutes * 60000UL)
+                {
+                    anyOk = true;
+                    break;
+                }
+            }
+        }
+        result = anyOk;
         break;
+    }
 
     default:
         result = false;

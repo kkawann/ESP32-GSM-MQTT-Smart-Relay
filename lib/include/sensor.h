@@ -12,6 +12,10 @@ int findSensorByCode(uint32_t code);
 float applyEMA(float prev, float newVal, float alpha);
 void saveSensorsAsync();
 
+// ── Auto-type signature: pack/unpack SensorTypeId in baseMask upper 4 bits ──
+void packSensorTypeIntoMask(RFSensor &s, uint8_t sensorTypeId);
+uint8_t getSensorTypeFromMask(uint32_t mask);
+
 void handleAPISensors();
 void handleAPISensorSave();
 void handleAPISensorDelete();

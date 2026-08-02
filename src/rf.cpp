@@ -9,44 +9,52 @@
 bool isRFSpam(unsigned long code)
 {
     unsigned long now = millis();
-    int idx = -1;
 
-    for (int i = 0; i < 5; i++)
+    // First try to find existing entry for this code
+    for (int i = 0; i < RF_HISTORY_SIZE; i++)
     {
-        if (rfHistory[i].code == code)
+        if (rfHistory[i].code == code && rfHistory[i].count > 0)
         {
-            idx = i;
-            break;
+            unsigned long sinceLast = now - rfHistory[i].timestamp;
+            rfHistory[i].timestamp = now;
+
+            // Burst: remotes often retransmit every ~10-50 ms
+            if (sinceLast < RF_BURST_WINDOW)
+            {
+                rfHistory[i].count++;
+                return true; // drop burst duplicate
+            }
+
+            // New press (gap large enough)
+            rfHistory[i].count = 1;
+            rfHistory[i].firstSeen = now;
+            return false;
         }
     }
 
-    // First time seeing this code
-    if (idx < 0)
+    // Not found — find empty or expired slot
+    int targetIdx = -1;
+    for (int i = 0; i < RF_HISTORY_SIZE; i++)
     {
-        idx = rfHistoryIndex;
-        rfHistory[idx].code = code;
-        rfHistory[idx].count = 1;
-        rfHistory[idx].timestamp = now;
-        rfHistory[idx].firstSeen = now;
-        rfHistoryIndex = (rfHistoryIndex + 1) % 5;
-        return false;
+        if (rfHistory[i].count == 0)
+        {
+            targetIdx = i;
+            break;
+        }
+        if ((now - rfHistory[i].firstSeen) > 10000)
+        {
+            targetIdx = i;
+            break;
+        }
     }
+    // fallback: overwrite oldest (index 0)
+    if (targetIdx < 0)
+        targetIdx = 0;
 
-    unsigned long sinceFirst = now - rfHistory[idx].firstSeen;
-    unsigned long sinceLast = now - rfHistory[idx].timestamp;
-
-    rfHistory[idx].timestamp = now;
-
-    // Burst: remotes often retransmit every ~10–50 ms
-    if (sinceLast < RF_BURST_WINDOW)
-    {
-        rfHistory[idx].count++;
-        return true; // drop burst duplicate
-    }
-
-    // New press (gap large enough)
-    rfHistory[idx].count = 1;
-    rfHistory[idx].firstSeen = now;
+    rfHistory[targetIdx].code = code;
+    rfHistory[targetIdx].count = 1;
+    rfHistory[targetIdx].timestamp = now;
+    rfHistory[targetIdx].firstSeen = now;
     return false;
 }
 
@@ -55,6 +63,18 @@ int findButtonByCode(unsigned long code)
     for (int i = 0; i < rfButtonCount; i++)
     {
         if (rfButtons[i].active && rfButtons[i].code == code)
+            return i;
+    }
+    return -1;
+}
+
+int findButtonByCodeAndProto(unsigned long code, uint8_t protocol)
+{
+    for (int i = 0; i < rfButtonCount; i++)
+    {
+        if (rfButtons[i].active &&
+            rfButtons[i].code == code &&
+            rfButtons[i].protocol == protocol)
             return i;
     }
     return -1;
@@ -142,7 +162,7 @@ void handleRFCode(unsigned long code, uint8_t protocol, uint16_t bitLength)
     unsigned long now = millis();
 
     // Two-button combo within RF_COMBO_WINDOW
-    if (lastRFCode != 0 && lastRFCode != code && (now - lastRFTime) < RF_COMBO_WINDOW)
+    if (lastRFCode != 0 && lastRFCode != code && lastRFProtocol == protocol && (now - lastRFTime) < RF_COMBO_WINDOW)
     {
         int comboIdx = findComboIndex(lastRFCode, code);
         if (comboIdx >= 0)
@@ -155,11 +175,12 @@ void handleRFCode(unsigned long code, uint8_t protocol, uint16_t bitLength)
     }
 
     // Known button: track multi-click
-    int btnIdx = findButtonByCode(code);
+    int btnIdx = findButtonByCodeAndProto(code, protocol);
     if (btnIdx < 0)
     {
         lastRFCode = code;
         lastRFTime = now;
+        lastRFProtocol = protocol;
         return;
     }
 
@@ -175,6 +196,7 @@ void handleRFCode(unsigned long code, uint8_t protocol, uint16_t bitLength)
 
     lastRFCode = code;
     lastRFTime = now;
+    lastRFProtocol = protocol;
     longPressDetected = false;
 
     if (rfClickCount >= 3 && (now - firstClickTime) < RF_TRIPLE_CLICK_WINDOW)
@@ -191,7 +213,7 @@ void processRFClickDetection()
         return;
     unsigned long now = millis();
     unsigned long elapsed = now - lastRFTime;
-    int btnIdx = findButtonByCode(lastRFCode);
+    int btnIdx = findButtonByCodeAndProto(lastRFCode, lastRFProtocol);
     if (btnIdx < 0)
     {
         lastRFCode = 0;

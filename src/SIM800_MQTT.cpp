@@ -11,6 +11,7 @@ static uint16_t _mqtt_build_publish(MqttClient_t *mqtt, uint8_t *buf, const char
 static uint16_t _mqtt_build_pingreq(uint8_t *buf);
 static void _mqtt_handle_packet(MqttClient_t *mqtt, const uint8_t *packet, uint16_t len);
 static void _mqtt_on_tcp_data(const uint8_t *data, uint16_t len);
+static bool _mqtt_rx_buffer_complete(MqttClient_t *mqtt);
 static void _mqtt_on_tcp_connect(bool connected);
 static void _mqtt_on_gprs_connect(bool connected);
 
@@ -161,6 +162,42 @@ void MQTT_Process(MqttClient_t *mqtt)
 {
     if (!mqtt)
         return;
+
+    // ✅ پردازش بافر دریافتی — پکت‌ها بایت به بایت جمع میشن
+    while (_mqtt_rx_buffer_complete(mqtt))
+    {
+        // پیدا کردن طول متغیر برای تعیین اندازه کل پکت
+        uint16_t pos = 1;
+        uint32_t remaining_len = 0;
+        uint32_t multiplier = 1;
+        while (pos < mqtt->rx_len)
+        {
+            uint8_t byte = mqtt->rx_buffer[pos];
+            remaining_len += (byte & 0x7F) * multiplier;
+            multiplier *= 128;
+            pos++;
+            if ((byte & 0x80) == 0)
+                break;
+        }
+        uint16_t total = pos + remaining_len;
+
+        Serial.print("[MQTT] RX complete packet: ");
+        Serial.print(total);
+        Serial.println("B");
+
+        _mqtt_handle_packet(mqtt, mqtt->rx_buffer, total);
+
+        // جابجایی باقیمانده بافر
+        if (mqtt->rx_len > total)
+        {
+            memmove(mqtt->rx_buffer, mqtt->rx_buffer + total, mqtt->rx_len - total);
+            mqtt->rx_len -= total;
+        }
+        else
+        {
+            mqtt->rx_len = 0;
+        }
+    }
 
     uint32_t now = millis();
 
@@ -379,17 +416,49 @@ static void _mqtt_on_tcp_connect(bool connected)
 }
 
 // ============================================================================
-// Private: TCP data callback
+// Private: TCP data callback — بافر جمع‌کننده پکت
 // ============================================================================
 static void _mqtt_on_tcp_data(const uint8_t *data, uint16_t len)
 {
     if (!_g_mqtt || !data || len == 0)
         return;
 
-    // Simple packet collector (assumes complete packet in one read)
-    // In production, you need proper buffering
+    // هر بایت رو به بافر اضافه کن
+    MqttClient_t *mqtt = _g_mqtt;
+    for (uint16_t i = 0; i < len && mqtt->rx_len < MQTT_MAX_PACKET_SIZE; i++)
+    {
+        mqtt->rx_buffer[mqtt->rx_len++] = data[i];
+    }
+}
 
-    _mqtt_handle_packet(_g_mqtt, data, len);
+// ============================================================================
+// بررسی کامل بودن پکت در بافر
+// ============================================================================
+static bool _mqtt_rx_buffer_complete(MqttClient_t *mqtt)
+{
+    if (mqtt->rx_len < 2)
+        return false;
+
+    // Decode remaining length (variable-length encoding)
+    uint16_t pos = 1;
+    uint32_t remaining_len = 0;
+    uint32_t multiplier = 1;
+
+    while (pos < mqtt->rx_len)
+    {
+        uint8_t byte = mqtt->rx_buffer[pos];
+        remaining_len += (byte & 0x7F) * multiplier;
+        multiplier *= 128;
+        pos++;
+        if ((byte & 0x80) == 0)
+            break;
+        if (multiplier > 128 * 128 * 128)
+            return false; // malformed
+    }
+
+    // آیا کل پکت (header + remaining) رسیده؟
+    uint16_t total = pos + remaining_len;
+    return (mqtt->rx_len >= total);
 }
 
 // ============================================================================

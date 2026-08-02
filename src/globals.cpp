@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 MqttClient_t mqttClient;
 bool mqttEnabled = true;
-char mqttBroker[64] = "188.121.124.97";
+char mqttBroker[64] = "broker.hivemq.com";
 uint16_t mqttPort = 1883;
 char mqttClientId[32] = "emqx_MzYwNT";
 char mqttUser[32] = "";
@@ -47,8 +47,9 @@ unsigned long lastRFTime = 0;
 int rfClickCount = 0;
 unsigned long firstClickTime = 0;
 bool longPressDetected = false;
-RFEventHistory rfHistory[5] = {};
+RFEventHistory rfHistory[RF_HISTORY_SIZE] = {};
 int rfHistoryIndex = 0;
+uint8_t lastRFProtocol = 0;
 
 RFSensor rfSensors[MAX_RF_SENSORS] = {};
 uint8_t rfSensorCount = 0;
