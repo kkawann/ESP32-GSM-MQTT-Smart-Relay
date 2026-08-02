@@ -1019,23 +1019,10 @@ void mqttConnectCallback(bool connected)
     {
         Serial.println("[MQTT] Connected to broker");
         addLog(5, 0, "MQTT connected");
-
-        MQTT_Subscribe(&mqttClient, mqttTopicCommand);
-        Serial.printf("[MQTT] Subscribed: %s\n", mqttTopicCommand);
-
-        for (int i = 1; i <= 4; i++)
-        {
-            char relayTopic[80];
-            snprintf(relayTopic, sizeof(relayTopic), "%s/%d", mqttTopicRelay, i);
-            MQTT_Subscribe(&mqttClient, relayTopic);
-            Serial.printf("[MQTT] Subscribed: %s\n", relayTopic);
-        }
-
-        MQTT_PublishString(&mqttClient, mqttTopicLog, "Device online", true);
-
-        // Trigger immediate status publish
+        // ✅ Subscribe ها از حلقه MQTT task اجرا میشن نه از callback
+        // چون callback همه رو یکجا صدا میزنه و SIM800 فقط یکی رو همزمان میفرسته
         if (taskMQTT)
-            xTaskNotify(taskMQTT, 0x01, eSetBits);
+            xTaskNotify(taskMQTT, 0x02, eSetBits); // signal: do subscribes
     }
     else
     {
@@ -1129,6 +1116,26 @@ void taskMQTTFn(void *param)
             if (notifyVal & 0x01)
             {
                 lastPublish = 0;
+            }
+
+            // ✅ Subscribe ها یکی یکی با تأخیر اجرا میشن
+            if (notifyVal & 0x02)
+            {
+                MQTT_Subscribe(&mqttClient, mqttTopicCommand);
+                Serial.printf("[MQTT] Subscribed: %s\n", mqttTopicCommand);
+                vTaskDelay(pdMS_TO_TICKS(200));
+
+                for (int i = 1; i <= 4; i++)
+                {
+                    char relayTopic[80];
+                    snprintf(relayTopic, sizeof(relayTopic), "%s/%d", mqttTopicRelay, i);
+                    MQTT_Subscribe(&mqttClient, relayTopic);
+                    Serial.printf("[MQTT] Subscribed: %s\n", relayTopic);
+                    vTaskDelay(pdMS_TO_TICKS(200));
+                }
+
+                MQTT_PublishString(&mqttClient, mqttTopicLog, "Device online", true);
+                lastPublish = 0; // publish status فوری
             }
         }
 
