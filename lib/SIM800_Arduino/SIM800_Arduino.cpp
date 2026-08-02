@@ -1355,16 +1355,6 @@ static void SIM800_ProcessCommandQueue(SIM800_t *sim)
         return;
     }
 
-    // ✅ اگه CIPSEND هست ولی TCP وصل نیست، دستور رو رد کن
-    if (strstr(qcmd->cmd, "AT+CIPSEND") && sim->tcp_state != TCP_CONNECTED)
-    {
-        SIM_LOGLN("[QUEUE] Skip CIPSEND - TCP not connected");
-        qcmd->active = false;
-        sim->cmd_queue_head = (sim->cmd_queue_head + 1) % SIM800_CMD_QUEUE_SIZE;
-        sim->cmd_queue_size--;
-        return;
-    }
-
     SIM_LOG("[QUEUE-] ");
     SIM_LOGLN(qcmd->cmd);
 
